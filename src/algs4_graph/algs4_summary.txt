@@ -1,0 +1,11 @@
+- sec1_UndirectedGraph: 不要把所有功能塞到一个类里，合理地组合、分层能使得架构更加健壮
+
+- sec1_SymbolGraph: 使用符号表将键映射到下标
+
+- sec1_E35_Bridge: 在递归中记住访问的顺序和最早的祖先顺序
+
+- sec2_DigraphCycle: 在递归中保存调用栈
+
+- sec2_Topological: 对递归调用的分析，列出递归和回溯的情况
+
+- sec2_KosarajuSCC: 将部分看做整体，从而简化问题
