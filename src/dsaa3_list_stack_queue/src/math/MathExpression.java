@@ -2,7 +2,7 @@ package dsaa3_list_stack_queue.src.math;
 
 
 import util.datastructure.MyStack;
-import util.tuple.TwoTuple;
+import util.tuple.Tuple2;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -223,7 +223,7 @@ public final class MathExpression {
             if (isOperand(s)) {
                 // 首先，查看下一个字符是否为数字字符或小数点
                 // 如果是，则将其解析为一个数字
-                TwoTuple<String, Integer> result = getDigitString(i, infix);
+                Tuple2<String, Integer> result = getDigitString(i, infix);
 //                System.out.println("解析出来的数字：" + result.a + "起始位置和终止位置：" + i + " - " + result.b);
                 mathUnitSequence.addUnit(new MathUnitSequence.Unit(MathUnitSequence.OPERAND, Double.valueOf(result.a)
                         , null));
@@ -371,7 +371,7 @@ public final class MathExpression {
         return null;
     }
 
-    private static TwoTuple<String, Integer> getDigitString(int digitStart, String source) {
+    private static Tuple2<String, Integer> getDigitString(int digitStart, String source) {
         int index = digitStart;
         while (index < source.length()) {
             if (isOperand(source.charAt(index) + "")) {
@@ -381,6 +381,6 @@ public final class MathExpression {
             }
         }
 
-        return new TwoTuple<>(source.substring(digitStart, index), index);
+        return new Tuple2<>(source.substring(digitStart, index), index);
     }
 }

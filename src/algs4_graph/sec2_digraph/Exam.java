@@ -7,9 +7,9 @@ import algs4_graph.sec2_digraph.src.DigraphCycle;
 import org.junit.jupiter.api.Test;
 import util.datastructure.MyQueue;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Queue;
+import java.util.*;
+import java.util.function.BinaryOperator;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -50,111 +50,84 @@ public class Exam {
         }
     }
 
-    // TODO: 接近
     /**
      * ### 21. 有向无环图中的LCA（最近共同祖先）。给定一幅有向无环图和两个顶点v和w，找出v和w的LCA。
+     * 这里假设有向无环图中结点可以有多个父结点。如果是一棵树的话参见{@link E21_LCA}
      */
-    public class LCA {
-
-        private Digraph g;
-        private Digraph inv;
+    public static class HeightLCA {
+        private Digraph g, inv;
+        private int[] height;
+        private boolean[] marked;
         private Queue<Integer> queue;
-        private boolean[] vMarked, wMarked, hMarked;
-        private int[] vDist, wDist, hDist;
 
-        public LCA(Digraph g) {
+        public HeightLCA(Digraph g) {
+            assert !new DigraphCycle(g).hasCycle();
+
             this.g = g;
             inv = g.reverse();
+            height = new int[g.vertexNum()];
+            marked = new boolean[g.vertexNum()];
             queue = new MyQueue<>();
-            vMarked = new boolean[g.vertexNum()];
-            wMarked = new boolean[g.vertexNum()];
-            hMarked = new boolean[g.vertexNum()];
-            vDist = new int[g.vertexNum()];
-            wDist = new int[g.vertexNum()];
-            hDist = new int[g.vertexNum()];
 
-            if (new DigraphCycle(g).hasCycle())
-                throw new IllegalArgumentException("参数有向图中包含环");
+            Degrees degrees = new Degrees(g);
+            int[] roots = IntStream.range(0, g.vertexNum()).filter(v -> degrees.inDegree(v) == 0).toArray();
+            // 求出所有顶点高度
+            for (int root : roots) {
+                calcHeight(root);
+            }
         }
 
         public int lca(int v, int w) {
-            Arrays.fill(vMarked, false);
-            Arrays.fill(wMarked, false);
-            Arrays.fill(vDist, -1);
-            Arrays.fill(wDist, -1);
-            vDist[v] = 0;
-            wDist[w] = 0;
+            Set<Integer> vAncestors = findAncestors(v);
+            Set<Integer> wAncestors = findAncestors(w);
+            // 求共同祖先
+            vAncestors.retainAll(wAncestors);
 
-            bfs(inv, v, vMarked, vDist);
-            bfs(inv, w, wMarked, wDist);
-
-            int lca = -1, maxHeight = Integer.MIN_VALUE;
-            for (int n = 0; n < g.vertexNum(); n++) {
-                // 公共父顶点中，最大高度（到入度为0结点的最小路径长度）的父顶点是LCA
-                if (vMarked[n] && wMarked[n]) {
-                    int h = height(inv, n);
-                    if (maxHeight < h) {
-                        lca = n;
-                        maxHeight = h;
-                    }
-                }
-            }
-
-            return lca;
+            // 具有最大高度的共同祖先即为LCA
+            return vAncestors.stream().parallel().max(Comparator.comparingInt(i -> height[i])).orElse(-1);
         }
 
-        private void bfs(Digraph inv, int v, boolean[] marked, int[] dist) {
-            queue.clear();
+        public int height(int v) {
+            return height[v];
+        }
 
-            queue.offer(v);
+        private void calcHeight(int root) {
+            for (int w: g.adj(root))
+                calcHeight(w, root);
+        }
+
+        private void calcHeight(int u, int p) {
+            if (height[u] == 0 || height[u] > height[p] + 1) {
+                height[u] = height[p] + 1;
+                for (int e: g.adj(u))
+                    calcHeight(e, u);
+            }
+        }
+
+        private Set<Integer> findAncestors(int v) {
             marked[v] = true;
+            queue.offer(v);
 
+            Set<Integer> ancestors = new HashSet<>();
+            // 需要加上它自己，因为v可能是w的祖先
+            ancestors.add(v);
             while (!queue.isEmpty()) {
                 v = queue.poll();
                 for (int w: inv.adj(v)) {
                     if (!marked[w]) {
                         marked[w] = true;
-                        dist[w] = dist[v] + 1;
                         queue.offer(w);
+                        ancestors.add(w);
                     }
                 }
             }
-        }
+            Arrays.fill(marked, false);
 
-        private int height(Digraph inv, int v) {
-            queue.clear();
-            Arrays.fill(hMarked, false);
-            Arrays.fill(hDist, -1);
-            int h = Integer.MAX_VALUE;
-
-            hMarked[v] = true;
-            hDist[v] = 0;
-            queue.offer(v);
-
-            while (!queue.isEmpty()) {
-                v = queue.poll();
-                boolean hasEdge = false;
-                for (int w: inv.adj(v)) {
-                    hasEdge = true;
-                    if (!hMarked[w]) {
-                        hMarked[w] = true;
-                        hDist[w] = hDist[v] + 1;
-                        queue.offer(w);
-                    }
-                }
-
-                // 发现起点
-                if (!hasEdge && h > hDist[v]) {
-                    h = hDist[v];
-                }
-            }
-
-            return h;
+            return ancestors;
         }
     }
 
-    @Test
-    public void test_LCA() {
+    public static Digraph lcaG() {
         // 这是一个层次的图，从0-12，(0,1,2)、(3,4)、(5,6,7,8)、(9,10)、(11,12)分别是不同的层
         Digraph g = new Digraph(13);
         g.addEdge(0, 3);
@@ -175,14 +148,22 @@ public class Exam {
         g.addEdge(9, 12);
         g.addEdge(10, 12);
 
-        LCA lca = new LCA(g);
-        assertEquals(lca.lca(5, 10), 1);
-        assertEquals(lca.lca(3, 1), 1);
-        assertEquals(lca.lca(3, 4), 1);
-        assertEquals(lca.lca(0, 2), -1);
-        assertEquals(lca.lca(6, 12), 6);
-        assertEquals(lca.lca(6, 12), 6);
-        assertEquals(lca.lca(11, 10), 8);
-        assertEquals(lca.lca(5, 9), 3);
+        return g;
+    }
+
+    public static void testLCA(BinaryOperator<Integer> lca) {
+        assertEquals(lca.apply(5, 10), 1);
+        assertEquals(lca.apply(3, 1), 1);
+        assertEquals(lca.apply(3, 4), 1);
+        assertEquals(lca.apply(0, 2), -1);
+        assertEquals(lca.apply(6, 12), 6);
+        assertEquals(lca.apply(6, 12), 6);
+        assertEquals(lca.apply(11, 10), 8);
+        assertEquals(lca.apply(5, 9), 3);
+    }
+
+    @Test
+    public void test_LCA() {
+        testLCA(new HeightLCA(lcaG())::lca);
     }
 }

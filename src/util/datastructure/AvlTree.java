@@ -1,7 +1,7 @@
 package util.datastructure;
 
 
-import util.tuple.TwoTuple;
+import util.tuple.Tuple2;
 
 /**
  * AVL 树
@@ -65,14 +65,14 @@ public class AvlTree<T extends Comparable<? super T>> {
     }
 
     public T removeMax() {
-        TwoTuple<AvlNode<T>, T> result = removeMaxNode(root);
+        Tuple2<AvlNode<T>, T> result = removeMaxNode(root);
         root = result.a;
 
         return result.b;
     }
 
     public T removeMin() {
-        TwoTuple<AvlNode<T>, T> result = removeMinNode(root);
+        Tuple2<AvlNode<T>, T> result = removeMinNode(root);
         root = result.a;
 
         return result.b;
@@ -153,7 +153,7 @@ public class AvlTree<T extends Comparable<? super T>> {
         return null;
     }
 
-    private TwoTuple<AvlNode<T>, T> removeMaxNode(AvlNode<T> start) {
+    private Tuple2<AvlNode<T>, T> removeMaxNode(AvlNode<T> start) {
         if (start != null) {
             AvlNode<T> removed = start;
             AvlNode<T> removedParent = start;
@@ -171,13 +171,13 @@ public class AvlTree<T extends Comparable<? super T>> {
             freeAvlNode(removed);
             size--;
 
-            return new TwoTuple<>(balance(start), removedResult);
+            return new Tuple2<>(balance(start), removedResult);
         }
 
-        return new TwoTuple<>(null, null);
+        return new Tuple2<>(null, null);
     }
 
-    private TwoTuple<AvlNode<T>, T> removeMinNode(AvlNode<T> start) {
+    private Tuple2<AvlNode<T>, T> removeMinNode(AvlNode<T> start) {
         if (start != null) {
             AvlNode<T> removed = start;
             AvlNode<T> removedParent = start;
@@ -195,10 +195,10 @@ public class AvlTree<T extends Comparable<? super T>> {
             freeAvlNode(removed);
             size--;
 
-            return new TwoTuple<>(balance(start), removedResult);
+            return new Tuple2<>(balance(start), removedResult);
         }
 
-        return new TwoTuple<>(null, null);
+        return new Tuple2<>(null, null);
     }
 
     private void freeAvlNode(AvlNode<T> freed) {

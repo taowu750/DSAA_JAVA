@@ -1,7 +1,7 @@
 package util.datagen;
 
 
-import util.tuple.TwoTuple;
+import util.tuple.Tuple2;
 
 import java.util.LinkedHashMap;
 
@@ -12,9 +12,9 @@ import java.util.LinkedHashMap;
  */
 public class MapData<K, V> extends LinkedHashMap<K, V> {
 
-    public MapData(IGenerator<TwoTuple<K, V>> gen, int quantity) {
+    public MapData(IGenerator<Tuple2<K, V>> gen, int quantity) {
         for (int i = 0; i < quantity; i++) {
-            TwoTuple<K, V> tuple = gen.next();
+            Tuple2<K, V> tuple = gen.next();
             put(tuple.a, tuple.b);
         }
     }
@@ -44,7 +44,7 @@ public class MapData<K, V> extends LinkedHashMap<K, V> {
     }
 
 
-    public static <K, V> MapData<K, V> map(IGenerator<TwoTuple<K, V>> gen, int quantity) {
+    public static <K, V> MapData<K, V> map(IGenerator<Tuple2<K, V>> gen, int quantity) {
         return new MapData<K, V>(gen, quantity);
     }
 
