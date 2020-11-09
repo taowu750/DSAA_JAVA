@@ -65,6 +65,7 @@ class Euler {
                     // 注意，迭代器 next() 之后不会回去
                     v = adjs[v].next();
                 }
+                // 逆后序
                 eulerCycle.push(v);
             }
         }
