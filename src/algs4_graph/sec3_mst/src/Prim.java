@@ -17,6 +17,7 @@ public class Prim implements MST {
     private Edge[] edgeTo;
     private double[] distTo;
     private boolean[] marked;
+    // 有效地横切边
     private MyIndexPriorityQueue<Double> pq;
     private MyQueue<Edge> edges;
     private double weight;
@@ -35,7 +36,7 @@ public class Prim implements MST {
         distTo[0] = 0;
         pq.offer(0, 0.0);
         while (!pq.isEmpty()) {
-            // 将最近的顶点添加到树中
+            // 将离树最近的顶点添加到树中
             visit(g, pq.poll().index());
         }
 
@@ -65,17 +66,19 @@ public class Prim implements MST {
 
 
     private void visit(SimpleWeighedGraph g, int v) {
+        // 将顶点v添加到树中
         marked[v] = true;
         for (Edge e : g.adj(v)) {
             int w = e.other(v);
 
-            // 说明 w 已经在树中
+            // w 已经在树中
             if (marked[w])
                 continue;
-            // 只保留和 w 最近的边
+            // 只保留树和 w 最近的边，这避免了保存所有从w到树的边
             if (Double.compare(e.weight(), distTo[w]) < 0) {
                 edgeTo[w] = e;
                 distTo[w] = e.weight();
+                // 注意不是加入到pq中的顶点就在树中了，而是每次从pq中弹出的最近顶点会被添加到树中
                 if (pq.contains(w))
                     pq.set(w, distTo[w]);
                 else

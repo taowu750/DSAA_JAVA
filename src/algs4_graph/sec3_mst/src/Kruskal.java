@@ -6,6 +6,8 @@ import util.datastructure.MyQueue;
 
 /**
  * Kruskal 算法最小生成树。
+ * 和Prim算法不同的是，Prim算法从局部出发，逐步扩展到全局；Kruskal算法总览全局，从其中找到最优解。
+ * Prim算法每一步都为树添加一条边，Kruskal会连接一片森林中的两棵树。
  */
 public class Kruskal implements MST {
 

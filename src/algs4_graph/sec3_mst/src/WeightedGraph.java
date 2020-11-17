@@ -53,6 +53,14 @@ public class WeightedGraph implements SimpleWeighedGraph {
         edgeNum++;
     }
 
+    public void deleteEdge(Edge edge) {
+        int v = edge.either(), w = edge.other(v);
+
+        adjs[v].remove(edge);
+        adjs[w].remove(edge);
+        edgeNum--;
+    }
+
     public Iterable<Edge> adj(int v) {
         return adjs[v];
     }
@@ -67,6 +75,12 @@ public class WeightedGraph implements SimpleWeighedGraph {
         }
 
         return edges;
+    }
+
+    public void clearEdges() {
+        for (List<Edge> adj : adjs) {
+            adj.clear();
+        }
     }
 
     @Override

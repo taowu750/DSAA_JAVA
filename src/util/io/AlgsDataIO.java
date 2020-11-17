@@ -106,14 +106,26 @@ public class AlgsDataIO {
         return DIR + "jobs.txt";
     }
 
+    /**
+     * 小型加权无向图
+     * @return
+     */
     public static In openTinyEWG() {
         return newIn("tinyEWG.txt");
     }
 
+    /**
+     * 包含250个顶点的加权无向欧拉图
+     * @return
+     */
     public static In openMediumEWG() {
         return newIn("mediumEWG.txt");
     }
 
+    /**
+     * 包含100万个顶点的加权无向欧拉图
+     * @return
+     */
     public static In openLargeEWG() {
         return newIn("largeEWG.txt");
     }

@@ -7,7 +7,7 @@ import java.util.Queue;
 
 /**
  * Prim 算法实现最小生成树。
- * 连接新加入如中的顶点与其他已经在树中顶点的边都失效了。
+ * 新加入树中的顶点与其他已经在树中顶点之间边都失效了。
  * 这种延时实现会保留在优先队列中失效的边。
  */
 public class LazyPrim implements MST {
