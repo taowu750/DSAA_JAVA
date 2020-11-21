@@ -8,8 +8,8 @@ import util.io.AlgsDataIO;
 /**
  * Dijkstra 最短路径算法。它与 Prim 算法很像，不同之处在于 Prim 算法
  * 每次添加的都是离树最近的顶点，Dijkstra 算法每次添加的都是离起点最近
- * 的算法。
- * Dijkstra 算法无法处理父权值。
+ * 的顶点。
+ * Dijkstra 算法无法处理负权值。
  */
 public class Dijkstra implements SP {
 

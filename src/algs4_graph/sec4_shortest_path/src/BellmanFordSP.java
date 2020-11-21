@@ -7,23 +7,26 @@ import util.datastructure.MyQueue;
 import util.datastructure.MyStack;
 import util.io.AlgsDataIO;
 
+import java.util.Arrays;
 import java.util.Queue;
 
 /**
  * <p>
  * Bellman-Ford 算法，用于寻找有负值边的最短路径。我们将 dist[s] 设为 0，
  * 其他设为无穷大，以任意顺序放松有向图的所有边，重复 V 轮。
- * for (int pass = 0; pass < g.vertexNum(); pass++)
- * for (int v = 0; v < g.vertexNum(); v++)
- * relax(g, v);
+ * <pre>
+ *     for (int pass = 0; pass < g.vertexNum(); pass++)
+ *         for (int v = 0; v < g.vertexNum(); v++)
+ *             relax(g, v);
+ * </pre>
  * 其实，根据经验我们知道任意一轮的许多边的放松都不会成功，只有上一轮中的 distTo[] 值发生变化的
  * 顶点指出的边才能够改变其他 distTo[] 元素的值。我们使用队列记录上一轮中改变的顶点，这样就能够
  * 优化性能。
  * </p>
  * <p>
  * 它的应用需要满足以下条件：
- * - 找出具有负权重的环
- * - 给定顶点 s，从 s 无法到达任何负权重的环。
+ * <li>找出具有负权重的环</li>
+ * <li>给定顶点 s，从 s 无法到达任何负权重的环。</li>
  * 负权重的环就是环中所有边权重之和为负值
  * </p>
  * <p>
@@ -48,9 +51,7 @@ public class BellmanFordSP implements SP {
 
     public BellmanFordSP(WeightedDigraph g, int s) {
         distTo = new double[g.vertexNum()];
-        for (int i = 0; i < distTo.length; i++) {
-            distTo[i] = Double.POSITIVE_INFINITY;
-        }
+        Arrays.fill(distTo, Double.POSITIVE_INFINITY);
         edgeTo = new DirectedEdge[g.vertexNum()];
         onQ = new boolean[g.vertexNum()];
         queue = new MyQueue<>();

@@ -130,10 +130,18 @@ public class AlgsDataIO {
         return newIn("largeEWG.txt");
     }
 
+    /**
+     * 小型加权有向图
+     * @return
+     */
     public static In openTinyEWD() {
         return newIn("tinyEWD.txt");
     }
 
+    /**
+     * 小型加权有向无环图
+     * @return
+     */
     public static In openTinyEWDAG() {
         return newIn("tinyEWDAG.txt");
     }

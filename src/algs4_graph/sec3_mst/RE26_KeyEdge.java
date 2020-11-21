@@ -11,16 +11,13 @@ import util.datastructure.MyPriorityQueue;
 import java.util.*;
 import java.util.stream.StreamSupport;
 
-public class Exam {
+/**
+ * 关键边指的是图中最小生成树的某一条边，如果删除它，那么新图中最小生成树
+ * 的总权重会大于原来的权重。时间复杂度要求O(ElogE)
+ * 注意，这个问题中边的权重并不一定各不相同，否则最小生成树中所有的边就都会是关键边。
+ */
+public class RE26_KeyEdge {
 
-    /**
-     * ### 26. 关键边指的是图中最小生成树的某一条边，如果删除它，那么新图中最小生成树
-     * 的总权重会大于原来的权重。时间复杂度要求O(ElogE)
-     * 注意，这个问题中边的权重并不一定各不相同，否则最小生成树中所有的边就都会是关键边。
-     *
-     * @param g
-     * @return
-     */
     public static Iterable<Edge> keyEdges(SimpleWeighedGraph g) {
         /*
          边e是关键的当且仅当它是包含所有权重小于等于它的边构成的子图中的桥（这个子图包含最小生成树的一部分）。
