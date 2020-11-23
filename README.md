@@ -1,6 +1,6 @@
 # 《算法4》
 
-这是关于《算法4》一书的算法项目，包含书中的算法和大量算法习题。目前做到了第4章第4节最短路径那里，将会长期更新。项目使用`Java8`，用`IDEA`编写，用到了`Junit5`库。
+这是关于《算法4》一书的算法项目，包含书中的算法和大量算法习题。目前做到了第5章第1节字符串排序那里，将会长期更新。项目使用`Java8`，用`IDEA`编写，用到了`Junit5`库。
 
 下面是你可能会用到的一些官方代码和数据：
 [官方网站](http://algs4.cs.princeton.edu/home/) [官方代码下载](http://algs4.cs.princeton.edu/code/algs4.jar) [官方测试数据下载](http://algs4.cs.princeton.edu/code/algs4-data.zip)
