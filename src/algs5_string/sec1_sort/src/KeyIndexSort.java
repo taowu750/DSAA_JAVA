@@ -8,7 +8,7 @@ public class KeyIndexSort {
 
     public static class KI {
         /*
-        key >= 0
+        key: [0, R)
          */
         private int key;
         private String value;
@@ -35,9 +35,10 @@ public class KeyIndexSort {
 
 
     /**
+     * 按键从小到大排序。相同键之间的相对顺序不变，因此算法是稳定的
      *
      * @param a
-     * @param R 最大索引号+1，索引从 0 开始
+     * @param R 最大索引号+1，索引 [0, R)
      */
     public static void sort(KI[] a, int R) {
         int N = a.length;
