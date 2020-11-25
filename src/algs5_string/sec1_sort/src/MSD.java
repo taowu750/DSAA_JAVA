@@ -6,16 +6,12 @@ package algs5_string.sec1_sort.src;
  * 首先使用键索引计数法将所有字符串按照首字母排序，然后递归地再将每个首字母对应的
  * 子数组排序。
  */
-public class MSD {
+public class MSD extends AbstractStringSort {
 
-    // 基数
-    private static int R = 256;
-    // 小数组的切换阈值
-    private static final int M = 15;
-    private static String[] aux;
+    private String[] aux;
 
 
-    public static void sort(String[] a) {
+    public void sort(String[] a) {
         int N = a.length;
         aux = new String[a.length];
         sort(a, 0, N - 1, 0);
@@ -26,7 +22,7 @@ public class MSD {
      * lo 和 hi 是字符串的索引。
      * d 是字符在字符串中的索引，从0开始。
      */
-    private static void sort(String[] a, int lo, int hi, int d) {
+    private void sort(String[] a, int lo, int hi, int d) {
         // 以第 d 个字符为键将 a[lo] 至 a[hi] 排序
         if (hi <= lo + M) {
             insertSort(a, lo, hi, d);
@@ -49,31 +45,6 @@ public class MSD {
             // 递归的以每个字符为键进行排序
             for (int r = 0; r < R; r++)
                 sort(a, lo + count[r], lo + count[r + 1] - 1, d + 1);
-        }
-    }
-
-    /*
-    当指定位置超过字符串末尾时返回-1
-     */
-    public static int charAt(String s, int d) {
-        if (d < s.length())
-            return s.charAt(d);
-        else
-            return -1;
-    }
-
-    /*
-    对字符串的[d,)部分进行排序
-     */
-    private static void insertSort(String[] a, int lo, int hi, int d) {
-        for (int i = lo + 1; i <= hi; i++) {
-            String tmp = a[i];
-            int j = i - 1;
-            for (; j >= lo && a[j].substring(d).compareTo(tmp.substring(d)) > 0; j--)
-                a[j + 1] = a[j];
-            if (j != i - 1) {
-                a[j] = tmp;
-            }
         }
     }
 }
