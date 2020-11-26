@@ -5,12 +5,16 @@ import util.datastructure.MyQueue;
 import java.util.Queue;
 
 
-// TODO: 使用字母表改造
-
 /**
+ * <p>
  * 单词查找树实现。这是一个 R 向单词查找树。
+ * 它的链表结构和键的插入、删除顺序无关。对于任意给定的一组键，其单词查找树都是唯一的。
+ * 在单词查找树中查找一个键或者插入一个键时，访问数组的次数最多为最长的键长度加 1。和符号表中键的个数无关。
+ * </p>
  *
- * 此实现不适用于长键和单向分支的情况
+ * 此实现不适用于长键和单向分支的情况。
+ *
+ *
  *
  * @param <V>
  */
@@ -128,6 +132,7 @@ public class TrieST<V> implements StringST<V> {
         return get(x.next[c], k, d + 1);
     }
 
+    // put 过程中更新结点的 size，就需要有某种方式判断当前插入的值是原先不存在的
     private Node<V> put(Node<V> x, String k, V v, int d) {
         if (x == null)
             x = new Node(R);

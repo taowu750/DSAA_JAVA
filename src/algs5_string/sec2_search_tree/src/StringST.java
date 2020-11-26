@@ -18,7 +18,8 @@ public interface StringST<V> {
     boolean contains(String key);
 
     /**
-     * s 的前缀中最长的键。
+     * s 的前缀中最长的键。例如单词查找树中存在<code>she sells sea shells by the sea shore</code>这些字符串，
+     * <code>longestPrefixOf("shell")</code>返回 she，<code>longestPrefixOf("shellsort")</code>返回 shells。
      *
      * @param s
      * @return

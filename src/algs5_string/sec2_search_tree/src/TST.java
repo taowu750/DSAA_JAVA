@@ -30,9 +30,9 @@ public class TST<V> implements StringST<V> {
         root = put(root, k, v, 0);
     }
 
+    // 删除操作需要删除 size（它和它的子结点中所有值的数量）为 0 的结点。因此每个结点都需要记录 size
     @Override
     public void delete(String k) {
-
     }
 
     @Override
