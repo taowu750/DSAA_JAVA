@@ -53,6 +53,10 @@ public class KMP extends AbstractStringSearch {
         genDfa();
     }
 
+    public static void main(String[] args) {
+        test(new KMP("n"));
+    }
+
 
     @Override
     public int search(String pat, String txt) {

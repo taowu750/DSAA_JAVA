@@ -4,6 +4,11 @@ package algs5_string.sec3_substring.src;
  * 显示回退的暴力算法，和暴力算法性能一样，只是实现方式不同。
  */
 public class BruteBackSearch extends AbstractStringSearch {
+
+    public static void main(String[] args) {
+        test(new BruteBackSearch());
+    }
+
     @Override
     public int search(String pat, String txt) {
         int j, M = pat.length();

@@ -27,6 +27,10 @@ public class BetterKMP extends AbstractStringSearch {
         genNext(pat);
     }
 
+    public static void main(String[] args) {
+        test(new BetterKMP("null"));
+    }
+
     @Override
     public int search(String pat, String txt) {
         genNext(pat);

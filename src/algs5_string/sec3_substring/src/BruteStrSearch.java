@@ -4,6 +4,11 @@ package algs5_string.sec3_substring.src;
  * 字符串查找的暴力算法。
  */
 public class BruteStrSearch extends AbstractStringSearch {
+
+    public static void main(String[] args) {
+        test(new BruteStrSearch());
+    }
+
     @Override
     public int search(String pat, String txt) {
         int M = pat.length();
