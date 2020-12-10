@@ -44,7 +44,7 @@ import java.util.*;
  * <ul>
  *     <li>NFA 中，字符表示状态，也就是结点，而不是 DFA 中的边</li>
  *     <li>长度为 M 的正则表达式中的每个字符在 NFA 中都有且只有一个对应的状态。NFA 还包含一个虚拟的接受状态 M</li>
- *     <li>除了 | 字符，其他字符所对应的状态，都有一条指向模式中下一个状态的边，这条边称为黑边</li>
+ *     <li>除了 | 和 + 字符，其他字符所对应的状态，都有一条指向模式中下一个状态的边，这条边称为黑边</li>
  *     <li>元字符所对应的状态至少含有一条可能指向任意状态的边，这条边称红边（参见图 NFA.png）</li>
  *     <li>有些状态有多条指出的边，但一个状态只能有一条黑边</li>
  * </ul>
@@ -124,15 +124,19 @@ public class RegExp {
                     lp = or;
                 }
             }
-            // 闭包元字符 * 可能存在于普通字符后，此时添加普通字符和 * 的边；
-            // 也可能 * 在 ) 后面，那么此时需要添加 * 和 ( 的边
-            if (i < M - 1 && re[i + 1] == '*') {
+
+            // 第 18 题：实现至少重复一次闭包 +
+
+            // 闭包元字符 */+ 可能存在于普通字符后，此时添加普通字符和 */+ 的边；
+            // 也可能 */+ 在 ) 后面，那么此时需要添加 */+ 和 ( 的边
+            if (i < M - 1 && (re[i + 1] == '*' || re[i + 1] == '+')) {
                 G.addEdge(lp, i + 1);
                 G.addEdge(i + 1, lp);
             }
-            // 如果 re[i] 是元字符（除了 |），那么需要添加它到下一个字符的黑边
+            // 如果 re[i] 是元字符（除了 | 和 +），那么需要添加它到下一个字符的黑边
             if (re[i] == '(' || re[i] == '*' || re[i] == ')')
                 G.addEdge(i, i + 1);
+            // + 至少要有一个匹配，+ 符号不能凭黑边转移到下一个状态
         }
     }
 
@@ -177,7 +181,7 @@ public class RegExp {
         assert new RegExp("(A*B|AC)D").match("AABD");
 
         // 16. 多项或运算测试
-        RegExp regExp = new RegExp("AB((C|D|E)F)*G");
+        RegExp multiOrReg = new RegExp("AB((C|D|E)F)*G");
         Map<String, Boolean> testAndResult = new HashMap<>();
         testAndResult.put("ABCFG", true);
         testAndResult.put("ABDFG", true);
@@ -191,9 +195,20 @@ public class RegExp {
         testAndResult.put("ABCG", false);
         testAndResult.put("ABFG", false);
         testAndResult.put("ABGFG", false);
-
         testAndResult.forEach((str, result) -> {
-            assert regExp.match(str) == result;
+            assert multiOrReg.match(str) == result;
+        });
+
+        // 18. + 闭包测试
+        RegExp plusReg = new RegExp("A+(B|C|D)*E+F");
+        testAndResult.clear();
+        testAndResult.put("ABEF", true);
+        testAndResult.put("AAACEF", true);
+        testAndResult.put("AADEEEF", true);
+        testAndResult.put("BEEF", false);
+        testAndResult.put("AACF", false);
+        testAndResult.forEach((str, result) -> {
+            assert plusReg.match(str) == result;
         });
     }
 }
