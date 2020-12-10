@@ -19,6 +19,26 @@ import java.util.*;
  * 正则表达式中的元字符即正则表达式的操作符，如 (、)、*、|、.
  * </p>
  * <p>
+ * 除了基本模型之外，还有如下额外规则：
+ * <ol>
+ *     <li>字符集合：
+ *     <ul>
+ *         <li>指定集合：[]</li>
+ *         <li>范围集合：[-]</li>
+ *         <li>补集：[^]</li>
+ *     </ul>
+ *     </li>
+ *     <li>闭包的简写：
+ *     <ul>
+ *         <li>至少重复一次：+</li>
+ *         <li>重复 0 或 1 次：?</li>
+ *         <li>指定重复次数s和范围：{}</li>
+ *     </ul>
+ *     </li>
+ *     <li>转义序列：\\</li>
+ * </ol>
+ * </p>
+ * <p>
  * 正则表达式的自动机不确定下一个字符是什么，它无法仅根据一个字符就判断模式是否出现。
  * 所以我们需要非确定优先状态自动机（NFA）。NFA 有以下特点：
  * <ul>
@@ -68,6 +88,8 @@ public class RegExp {
         Objects.requireNonNull(regExp);
         assert regExp.length() > 0;
 
+        // 添加括号
+        regExp = "(" + regExp + ")";
         // 使用栈记住 ( 和 | 的位置
         MyStack<Integer> stack = new MyStack<>();
         re = regExp.toCharArray();
@@ -84,11 +106,19 @@ public class RegExp {
                 // 遇到 )，从栈中弹出一个字符下标
                 int or = stack.pop();
                 if (re[or] == '|') {
-                    // 如果弹出的是 |，则增加一条 | 在栈中的上个字符到 | 的下个字符的红边，
-                    // 以及 | 到 ) 的红边
-                    lp = stack.pop();
-                    G.addEdge(lp, or + 1);
-                    G.addEdge(or, i);
+                    or = stack.pop();
+                    // 第 16 题： 实现多向或运算
+                    List<Integer> orList = new ArrayList<>();
+                    do {
+                        orList.add(or);
+                        // 添加 | 到 ) 的红边
+                        G.addEdge(or, i);
+                        or = stack.pop();
+                    } while (re[or] == '|');
+                    // 此时 lp 被设为 (，添加 ( 到每个 | 的红边
+                    lp = or;
+                    int finalLp = lp;
+                    orList.forEach(o -> G.addEdge(finalLp, o));
                 } else {
                     // 弹出来的是 (
                     lp = or;
@@ -143,6 +173,27 @@ public class RegExp {
     }
 
     public static void main(String[] args) {
-        assert new RegExp("((A*B|AC)D)").match("AABD");
+        // 基本测试
+        assert new RegExp("(A*B|AC)D").match("AABD");
+
+        // 16. 多项或运算测试
+        RegExp regExp = new RegExp("AB((C|D|E)F)*G");
+        Map<String, Boolean> testAndResult = new HashMap<>();
+        testAndResult.put("ABCFG", true);
+        testAndResult.put("ABDFG", true);
+        testAndResult.put("ABEFG", true);
+        testAndResult.put("ABG", true);
+        testAndResult.put("ABCFDFG", true);
+        testAndResult.put("ABCFEFG", true);
+        testAndResult.put("ABDFDFG", true);
+        testAndResult.put("CFG", false);
+        testAndResult.put("ACFG", false);
+        testAndResult.put("ABCG", false);
+        testAndResult.put("ABFG", false);
+        testAndResult.put("ABGFG", false);
+
+        testAndResult.forEach((str, result) -> {
+            assert regExp.match(str) == result;
+        });
     }
 }
