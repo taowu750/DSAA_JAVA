@@ -3,8 +3,13 @@ package algs5_string.sec4_regular_expr.src;
 import algs4_graph.sec2_digraph.src.Digraph;
 import algs4_graph.sec2_digraph.src.DigraphDFS;
 import util.datastructure.MyStack;
+import util.tuple.Tuple2;
+import util.tuple.Tuples;
 
 import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * <p>
@@ -86,11 +91,10 @@ public class RegExp {
 
     public RegExp(String regExp) {
         Objects.requireNonNull(regExp);
-        assert regExp.length() > 0;
 
         // 添加括号
         regExp = "(" + regExp + ")";
-        // 使用栈记住 ( 和 | 的位置
+        // 使用栈记住 (、| 的位置
         MyStack<Integer> stack = new MyStack<>();
         re = regExp.toCharArray();
         int M = re.length;
@@ -100,13 +104,12 @@ public class RegExp {
         for (int i = 0; i < M; i++) {
             int lp = i;
             // 遇到 ( 和 | 就压入栈中，| 是二元运算符
-            if (re[i] == '(' || re[i] == '|')
+            if (re[i] == '(' || re[i] == '|') {
                 stack.push(i);
-            else if (re[i] == ')') {
+            } else if (re[i] == ')') {
                 // 遇到 )，从栈中弹出一个字符下标
                 int or = stack.pop();
                 if (re[or] == '|') {
-                    or = stack.pop();
                     // 第 16 题： 实现多向或运算
                     List<Integer> orList = new ArrayList<>();
                     do {
@@ -115,28 +118,37 @@ public class RegExp {
                         G.addEdge(or, i);
                         or = stack.pop();
                     } while (re[or] == '|');
-                    // 此时 lp 被设为 (，添加 ( 到每个 | 的红边
+                    // 此时 lp 被设为 (，添加 ( 到每个 | 下个字符的红边
                     lp = or;
                     int finalLp = lp;
-                    orList.forEach(o -> G.addEdge(finalLp, o));
+                    orList.forEach(o -> G.addEdge(finalLp, o + 1));
                 } else {
                     // 弹出来的是 (
                     lp = or;
                 }
             }
 
-            // 第 18 题：实现至少重复一次闭包 +
+            // 第 20 题：字符集范围集合
+            if (re[i] == '[') {
+                // 找到 ] 位置
+                int j = i + 2;
+                for (; re[j] != ']'; j++);
+                // i 设为 ]，添加 [ 到 [] 内字符的红边，和 [] 内字符到 ] 的红边
+                i = j;
+                for (j = i - 1; j >= lp + 1; j--) {
+                    G.addEdge(lp , j);
+                    G.addEdge(j, i);
+                }
+            }
 
-            // 闭包元字符 */+ 可能存在于普通字符后，此时添加普通字符和 */+ 的边；
-            // 也可能 */+ 在 ) 后面，那么此时需要添加 */+ 和 ( 的边
-            if (i < M - 1 && (re[i + 1] == '*' || re[i + 1] == '+')) {
+            if (i < M - 1 && (re[i + 1] == '+' || re[i + 1] == '*')) {
                 G.addEdge(lp, i + 1);
                 G.addEdge(i + 1, lp);
             }
-            // 如果 re[i] 是元字符（除了 | 和 +），那么需要添加它到下一个字符的黑边
+
+            // 如果 re[i] 是 ( * )，那么需要添加它到下一个字符的黑边。这些边都是匹配空字符
             if (re[i] == '(' || re[i] == '*' || re[i] == ')')
                 G.addEdge(i, i + 1);
-            // + 至少要有一个匹配，+ 符号不能凭黑边转移到下一个状态
         }
     }
 
@@ -153,6 +165,8 @@ public class RegExp {
         }
 
         int N = txt.length();
+        // + 需要在运行时添加到下一个状态的 epsilon 边，匹配完之后还需要删除
+        Collection<Tuple2<Integer, Integer>> plusEdge = new ArrayList<>();
         for (int i = 0; i < N; i++) {
             char input = txt.charAt(i);
             Collection<Integer> matched = new HashSet<>();
@@ -160,6 +174,11 @@ public class RegExp {
             for (Integer status : statuses) {
                 if (status < re.length && (re[status] == input || re[status] == '.')) {
                     matched.add(status + 1);
+                    // 匹配了一次，运行时添加 + 到下一个字符的 epsilon 边
+                    if (re[status + 1] == '+') {
+                        G.addEdge(status + 1, status + 2);
+                        plusEdge.add(Tuples.t(status + 1, status + 2));
+                    }
                 }
             }
             statuses = matched;
@@ -170,6 +189,9 @@ public class RegExp {
                     statuses.add(v);
                 }
             }
+            // 删除 + 到下一个状态的边
+            plusEdge.forEach(t -> G.removeEdge(t.a, t.b));
+            plusEdge.clear();
         }
 
         // 如果最终状态集合中有接受状态，表示匹配成功
@@ -178,11 +200,11 @@ public class RegExp {
 
     public static void main(String[] args) {
         // 基本测试
-        assert new RegExp("(A*B|AC)D").match("AABD");
+        assertTrue(new RegExp("(A*B|AC)D").match("AABD"));
 
         // 16. 多项或运算测试
         RegExp multiOrReg = new RegExp("AB((C|D|E)F)*G");
-        Map<String, Boolean> testAndResult = new HashMap<>();
+        Map<String, Boolean> testAndResult = new LinkedHashMap<>();
         testAndResult.put("ABCFG", true);
         testAndResult.put("ABDFG", true);
         testAndResult.put("ABEFG", true);
@@ -196,7 +218,7 @@ public class RegExp {
         testAndResult.put("ABFG", false);
         testAndResult.put("ABGFG", false);
         testAndResult.forEach((str, result) -> {
-            assert multiOrReg.match(str) == result;
+            assertEquals(multiOrReg.match(str), result, str);
         });
 
         // 18. + 闭包测试
@@ -208,7 +230,23 @@ public class RegExp {
         testAndResult.put("BEEF", false);
         testAndResult.put("AACF", false);
         testAndResult.forEach((str, result) -> {
-            assert plusReg.match(str) == result;
+            assertEquals(plusReg.match(str), result, str);
+        });
+
+        // 20. 范围集合测试
+        RegExp rangeReg = new RegExp("(A[BC])+D[EF]*J");
+        testAndResult.clear();
+        testAndResult.put("ABDEJ", true);
+        testAndResult.put("ACDFJ", true);
+        testAndResult.put("ACABDEFFEFEJ", true);
+        testAndResult.put("ABABDJ", true);
+        testAndResult.put("AEDEJ", false);
+        testAndResult.put("ABADDFJ", false);
+        testAndResult.put("ACDGJ", false);
+        testAndResult.put("ACDEEGJ", false);
+        testAndResult.put("ACDFEFQJ", false);
+        testAndResult.forEach((str, result) -> {
+            assertEquals(rangeReg.match(str), result, str);
         });
     }
 }

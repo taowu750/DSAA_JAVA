@@ -53,6 +53,12 @@ public class Digraph implements SimpleGraph {
         edgeNum++;
     }
 
+    public void removeEdge(int v, int w) {
+        if (adjs[v].remove(Integer.valueOf(w))) {
+            edgeNum--;
+        }
+    }
+
     @Override
     public boolean hasEdge(int v, int w) {
         return adjs[v].contains(w);
