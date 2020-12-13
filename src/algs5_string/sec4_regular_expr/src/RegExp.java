@@ -3,8 +3,6 @@ package algs5_string.sec4_regular_expr.src;
 import algs4_graph.sec2_digraph.src.Digraph;
 import algs4_graph.sec2_digraph.src.DigraphDFS;
 import util.datastructure.MyStack;
-import util.tuple.Tuple2;
-import util.tuple.Tuples;
 
 import java.util.*;
 
@@ -132,22 +130,33 @@ public class RegExp {
             if (re[i] == '[') {
                 // 找到 ] 位置
                 int j = i + 2;
-                for (; re[j] != ']'; j++);
-                // i 设为 ]，添加 [ 到 [] 内字符的红边，和 [] 内字符到 ] 的红边
+                for (; re[j] != ']'; j++) ;
+                // i 设为 ]。添加 [ 到 [] 内字符的红边，和 [] 内字符到 ] 的红边
                 i = j;
                 for (j = i - 1; j >= lp + 1; j--) {
-                    G.addEdge(lp , j);
+                    G.addEdge(lp, j);
                     G.addEdge(j, i);
                 }
             }
 
-            if (i < M - 1 && (re[i + 1] == '+' || re[i + 1] == '*')) {
-                G.addEdge(lp, i + 1);
-                G.addEdge(i + 1, lp);
+            if (i < M - 1) {
+                if (re[i + 1] == '*') {
+                    // 如果 * 前面是普通字符，添加 * 和普通字符的边；
+                    // 如果 * 前面是 )]，添加 * 和 ([ 的边
+                    G.addEdge(lp, i + 1);
+                    G.addEdge(i + 1, lp);
+                } else if (re[i + 1] == '+') {
+                    // 第 18 题：实现至少匹配一次 +
+                    // 如果 + 前面是普通字符，添加 + 到普通字符的边；
+                    // 如果 + 前面是 )]，添加 + 到 ([ 的边
+                    // 因为 + 至少要匹配一次，所以不能添加到 + 的边，否则第一次运行时就会把
+                    // + 后面的字符也加入状态
+                    G.addEdge(i + 1, lp);
+                }
             }
 
-            // 如果 re[i] 是 ( * )，那么需要添加它到下一个字符的黑边。这些边都是匹配空字符
-            if (re[i] == '(' || re[i] == '*' || re[i] == ')')
+            // 如果 re[i] 是 ( * ) ]，那么需要添加它到下一个字符的黑边。
+            if (re[i] == '(' || re[i] == '*' || re[i] == ')' || re[i] == ']' || re[i] == '+')
                 G.addEdge(i, i + 1);
         }
     }
@@ -165,8 +174,6 @@ public class RegExp {
         }
 
         int N = txt.length();
-        // + 需要在运行时添加到下一个状态的 epsilon 边，匹配完之后还需要删除
-        Collection<Tuple2<Integer, Integer>> plusEdge = new ArrayList<>();
         for (int i = 0; i < N; i++) {
             char input = txt.charAt(i);
             Collection<Integer> matched = new HashSet<>();
@@ -174,11 +181,6 @@ public class RegExp {
             for (Integer status : statuses) {
                 if (status < re.length && (re[status] == input || re[status] == '.')) {
                     matched.add(status + 1);
-                    // 匹配了一次，运行时添加 + 到下一个字符的 epsilon 边
-                    if (re[status + 1] == '+') {
-                        G.addEdge(status + 1, status + 2);
-                        plusEdge.add(Tuples.t(status + 1, status + 2));
-                    }
                 }
             }
             statuses = matched;
@@ -189,9 +191,6 @@ public class RegExp {
                     statuses.add(v);
                 }
             }
-            // 删除 + 到下一个状态的边
-            plusEdge.forEach(t -> G.removeEdge(t.a, t.b));
-            plusEdge.clear();
         }
 
         // 如果最终状态集合中有接受状态，表示匹配成功
