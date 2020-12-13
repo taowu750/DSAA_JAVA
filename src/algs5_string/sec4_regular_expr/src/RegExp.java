@@ -5,6 +5,7 @@ import algs4_graph.sec2_digraph.src.DigraphDFS;
 import util.datastructure.MyStack;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -86,6 +87,10 @@ public class RegExp {
     private char[] re;
     // epsilon 字符转换
     private Digraph G;
+    // 用于存储一些特殊规则，例如补集。其中值是一个 Predicate 用来判断是否符合特定规则
+    private Map<Integer, Predicate<Character>> specialRules;
+    // 存储符合特殊规则后转移的边
+    private Map<Integer, Integer> specialRuleEdges;
 
     public RegExp(String regExp) {
         Objects.requireNonNull(regExp);
@@ -98,6 +103,8 @@ public class RegExp {
         int M = re.length;
         // M + 1，第 M 个状态是接受状态
         G = new Digraph(M + 1);
+        specialRules = new HashMap<>();
+        specialRuleEdges = new HashMap<>();
 
         for (int i = 0; i < M; i++) {
             int lp = i;
@@ -131,11 +138,21 @@ public class RegExp {
                 // 找到 ] 位置
                 int j = i + 2;
                 for (; re[j] != ']'; j++) ;
-                // i 设为 ]。添加 [ 到 [] 内字符的红边，和 [] 内字符到 ] 的红边
                 i = j;
-                for (j = i - 1; j >= lp + 1; j--) {
-                    G.addEdge(lp, j);
-                    G.addEdge(j, i);
+                if (re[lp + 1] == '^') {
+                    // 如果是补集，则需要使用特殊规则
+                    Set<Character> exclusiveChars = new HashSet<>();
+                    for (j = i - 1; j >= lp + 2; j--) {
+                        exclusiveChars.add(re[j]);
+                    }
+                    specialRules.put(lp, ch -> !exclusiveChars.contains(ch));
+                    specialRuleEdges.put(lp, i);
+                } else {
+                    // 添加 [ 到 [] 内字符的红边，和 [] 内字符到 ] 的红边
+                    for (j = i - 1; j >= lp + 1; j--) {
+                        G.addEdge(lp, j);
+                        G.addEdge(j, i);
+                    }
                 }
             }
 
@@ -155,7 +172,7 @@ public class RegExp {
                 }
             }
 
-            // 如果 re[i] 是 ( * ) ]，那么需要添加它到下一个字符的黑边。
+            // 如果 re[i] 是 (*)]+，那么需要添加它到下一个字符的黑边。
             if (re[i] == '(' || re[i] == '*' || re[i] == ')' || re[i] == ']' || re[i] == '+')
                 G.addEdge(i, i + 1);
         }
@@ -179,8 +196,14 @@ public class RegExp {
             Collection<Integer> matched = new HashSet<>();
             // 添加所有可能的匹配转换
             for (Integer status : statuses) {
-                if (status < re.length && (re[status] == input || re[status] == '.')) {
-                    matched.add(status + 1);
+                if (status < re.length) {
+                    // 应用补集的特殊规则
+                    if (re[status] == '[' &&  specialRules.containsKey(status) &&
+                            specialRules.get(status).test(input)) {
+                        matched.add(specialRuleEdges.get(status));
+                    } else if ((re[status] == input || re[status] == '.')) {
+                        matched.add(status + 1);
+                    }
                 }
             }
             statuses = matched;
@@ -246,6 +269,22 @@ public class RegExp {
         testAndResult.put("ACDFEFQJ", false);
         testAndResult.forEach((str, result) -> {
             assertEquals(rangeReg.match(str), result, str);
+        });
+
+        // 21. 补集测试
+        RegExp complementReg = new RegExp("(A[^BC])+DE[^FGH]*I");
+        testAndResult.clear();
+        testAndResult.put("ADDEAI", true);
+        testAndResult.put("AEAQDEI", true);
+        testAndResult.put("AKAFAJDEQMNI", true);
+        testAndResult.put("ABDEFI", false);
+        testAndResult.put("ACDEHI", false);
+        testAndResult.put("AKDEGI", false);
+        testAndResult.put("AKABDEI", false);
+        testAndResult.put("AKAJDEGI", false);
+        testAndResult.put("AKAJDEQCFI", false);
+        testAndResult.forEach((str, result) -> {
+            assertEquals(complementReg.match(str), result, str);
         });
     }
 }
