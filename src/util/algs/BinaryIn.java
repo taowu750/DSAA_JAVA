@@ -125,7 +125,7 @@ public final class BinaryIn {
             in = new BufferedInputStream(is);
             fillBuffer();
         } catch (IOException ioe) {
-            System.err.println("Could not open " + name);
+            throw new RuntimeException(ioe);
         }
     }
 
