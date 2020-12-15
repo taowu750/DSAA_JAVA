@@ -227,7 +227,8 @@ public final class Picture implements ActionListener {
             } else {
                 frame.setTitle(filename);
             }
-            frame.setResizable(false);
+            frame.setLocationByPlatform(true);
+            frame.setResizable(true);
             frame.pack();
             frame.setVisible(true);
         }
