@@ -87,8 +87,10 @@ public class RegExp {
     private char[] re;
     // epsilon 字符转换
     private Digraph G;
-    // 用于存储一些特殊规则，例如补集。其中值是一个 Predicate 用来判断是否符合特定规则
-    private Map<Integer, Predicate<Character>> specialRules;
+    // 用于存储补集的判断规则。其中值是一个 Predicate 用来判断输入是否在补集中
+    private Map<Integer, Predicate<Character>> complementRules;
+    // 用于存储重复次数的判断规则。其中值是一个 int 数组，存储次数的下限、上限、已重复次数
+    private Map<Integer, int[]> countRules;
     // 存储符合特殊规则后转移的边
     private Map<Integer, Integer> specialRuleEdges;
 
@@ -103,7 +105,8 @@ public class RegExp {
         int M = re.length;
         // M + 1，第 M 个状态是接受状态
         G = new Digraph(M + 1);
-        specialRules = new HashMap<>();
+        complementRules = new HashMap<>();
+        countRules = new HashMap<>();
         specialRuleEdges = new HashMap<>();
 
         for (int i = 0; i < M; i++) {
@@ -140,12 +143,13 @@ public class RegExp {
                 for (; re[j] != ']'; j++) ;
                 i = j;
                 if (re[lp + 1] == '^') {
+                    // 第 21 题：补集
                     // 如果是补集，则需要使用特殊规则
                     Set<Character> exclusiveChars = new HashSet<>();
                     for (j = i - 1; j >= lp + 2; j--) {
                         exclusiveChars.add(re[j]);
                     }
-                    specialRules.put(lp, ch -> !exclusiveChars.contains(ch));
+                    complementRules.put(lp, ch -> !exclusiveChars.contains(ch));
                     specialRuleEdges.put(lp, i);
                 } else {
                     // 添加 [ 到 [] 内字符的红边，和 [] 内字符到 ] 的红边
@@ -169,11 +173,31 @@ public class RegExp {
                     // 因为 + 至少要匹配一次，所以不能添加到 + 的边，否则第一次运行时就会把
                     // + 后面的字符也加入状态
                     G.addEdge(i + 1, lp);
+                } else if (re[i + 1] == '{') {
+                    G.addEdge(i + 1, lp);
+                    // 第 19 题：指定重复次数
+                    // 使用 count 记录字符出现次数和上下限
+                    int[] count = new int[3];
+                    int j = i + 3;
+                    // } 位置
+                    int toStatus;
+                    // count[0] 存储下限，count[1] 存储上限，count[2] 存储已出现次数
+                    if (re[j] == '-') {
+                        toStatus = i + 5;
+                        count[0] = re[i + 2] - '0';
+                        count[1] = re[i + 4] - '0';
+                    } else {
+                        toStatus = i + 3;
+                        count[0] = count[1] = re[i + 2] - '0';
+                    }
+                    countRules.put(i + 1, count);
+                    specialRuleEdges.put(i + 1, toStatus);
                 }
             }
 
-            // 如果 re[i] 是 (*)]+，那么需要添加它到下一个字符的黑边。
-            if (re[i] == '(' || re[i] == '*' || re[i] == ')' || re[i] == ']' || re[i] == '+')
+            // 如果 re[i] 是 (*)]+}，那么需要添加它到下一个字符的黑边。
+            if (re[i] == '(' || re[i] == '*' || re[i] == ')' ||
+                    re[i] == ']' || re[i] == '+' || re[i] == '}')
                 G.addEdge(i, i + 1);
         }
     }
@@ -192,17 +216,39 @@ public class RegExp {
 
         int N = txt.length();
         for (int i = 0; i < N; i++) {
+            if (statuses.size() == 0)
+                break;
+
             char input = txt.charAt(i);
             Collection<Integer> matched = new HashSet<>();
             // 添加所有可能的匹配转换
             for (Integer status : statuses) {
                 if (status < re.length) {
                     // 应用补集的特殊规则
-                    if (re[status] == '[' &&  specialRules.containsKey(status) &&
-                            specialRules.get(status).test(input)) {
+                    if (re[status] == '[' &&  complementRules.containsKey(status) &&
+                            complementRules.get(status).test(input)) {
                         matched.add(specialRuleEdges.get(status));
+                    } else if (re[status] == '{') {
+                        // 应用重复匹配次数的特殊规则。找到匹配，次数加 1
+                        countRules.get(status)[2]++;
                     } else if ((re[status] == input || re[status] == '.')) {
                         matched.add(status + 1);
+                    }
+                }
+            }
+            if (matched.size() == 0) {
+                // 当未匹配时，看看有没有 {
+                for (Integer s : statuses) {
+                    if (s < re.length && re[s] == '{') {
+                        int[] count = countRules.get(s);
+                        // 如果有 { 且在指定重复次数范围内，表示重复次数匹配成功，添加 }
+                        if (count[2] >= count[0] && count[2] <= count[1]) {
+                            // 需要回退一次输入
+                            i--;
+                            matched.add(specialRuleEdges.get(s));
+                        }
+                        // 将次数置 0
+                        count[2] = 0;
                     }
                 }
             }
@@ -239,9 +285,7 @@ public class RegExp {
         testAndResult.put("ABCG", false);
         testAndResult.put("ABFG", false);
         testAndResult.put("ABGFG", false);
-        testAndResult.forEach((str, result) -> {
-            assertEquals(multiOrReg.match(str), result, str);
-        });
+        testAndResult.forEach((str, result) -> assertEquals(multiOrReg.match(str), result, str));
 
         // 18. + 闭包测试
         RegExp plusReg = new RegExp("A+(B|C|D)*E+F");
@@ -251,9 +295,19 @@ public class RegExp {
         testAndResult.put("AADEEEF", true);
         testAndResult.put("BEEF", false);
         testAndResult.put("AACF", false);
-        testAndResult.forEach((str, result) -> {
-            assertEquals(plusReg.match(str), result, str);
-        });
+        testAndResult.forEach((str, result) -> assertEquals(plusReg.match(str), result, str));
+
+        // 19. 重复次数测试
+        RegExp countReg = new RegExp("A{2}B*(C[^123]){2-4}D");
+        testAndResult.clear();
+        testAndResult.put("AABC9C4D", true);
+        testAndResult.put("AAC4CQD", true);
+        testAndResult.put("AACJCMCCD", true);
+        testAndResult.put("AACJCMCCC8D", true);
+        testAndResult.put("ABC4CQD", false);
+        testAndResult.put("AABC4D", false);
+        testAndResult.put("AABC4CMCCC8CYD", false);
+        testAndResult.forEach((str, result) -> assertEquals(countReg.match(str), result, str));
 
         // 20. 范围集合测试
         RegExp rangeReg = new RegExp("(A[BC])+D[EF]*J");
@@ -267,9 +321,7 @@ public class RegExp {
         testAndResult.put("ACDGJ", false);
         testAndResult.put("ACDEEGJ", false);
         testAndResult.put("ACDFEFQJ", false);
-        testAndResult.forEach((str, result) -> {
-            assertEquals(rangeReg.match(str), result, str);
-        });
+        testAndResult.forEach((str, result) -> assertEquals(rangeReg.match(str), result, str));
 
         // 21. 补集测试
         RegExp complementReg = new RegExp("(A[^BC])+DE[^FGH]*I");
@@ -283,8 +335,6 @@ public class RegExp {
         testAndResult.put("AKABDEI", false);
         testAndResult.put("AKAJDEGI", false);
         testAndResult.put("AKAJDEQCFI", false);
-        testAndResult.forEach((str, result) -> {
-            assertEquals(complementReg.match(str), result, str);
-        });
+        testAndResult.forEach((str, result) -> assertEquals(complementReg.match(str), result, str));
     }
 }
