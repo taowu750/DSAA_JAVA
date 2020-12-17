@@ -22,7 +22,7 @@ public class HexDump {
                 if (cnt != 0 && cnt % width == 0) {
                     System.out.println();
                 }
-                StdOut.print(Integer.toHexString(binaryIn.readInt(8)) + " ");
+                StdOut.print(String.format("%02x", binaryIn.readChar() & 0xff) + " ");
             }
             System.out.println();
             System.out.println((cnt * 8) + " bits");

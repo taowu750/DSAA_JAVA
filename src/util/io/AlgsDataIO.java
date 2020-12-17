@@ -199,6 +199,32 @@ public class AlgsDataIO {
         }
     }
 
+    /**
+     * 字母 q 32x48 的位图。
+     *
+     * @return
+     */
+    public static InputStream openQ32x48() {
+        try {
+            return new FileInputStream(DIR + "q32x48.bin");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 字母 q 64x96 的位图。
+     *
+     * @return
+     */
+    public static InputStream openQ64x96() {
+        try {
+            return new FileInputStream(DIR + "q64x96.bin");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private static In newIn(String fileName) {
         return new In(DIR + fileName);
