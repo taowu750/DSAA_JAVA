@@ -2,6 +2,10 @@ package util.io;
 
 import util.algs.In;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+
 /**
  * 用来获取 algs 测试数据。
  */
@@ -180,6 +184,19 @@ public class AlgsDataIO {
      */
     public static In openRates() {
         return newIn("rates.txt");
+    }
+
+    /**
+     * 一段病毒 DNA 序列
+     *
+     * @return
+     */
+    public static InputStream openGenomeVirus() {
+        try {
+            return new FileInputStream(DIR + "genomeVirus.txt");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 

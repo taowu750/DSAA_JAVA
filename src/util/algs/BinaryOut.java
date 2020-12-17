@@ -38,7 +38,7 @@ import java.net.Socket;
  * @author Robert Sedgewick
  * @author Kevin Wayne
  */
-public final class BinaryOut {
+public final class BinaryOut implements AutoCloseable {
 
     private BufferedOutputStream out;  // the output stream
     private int                  buffer;                // 8-bit buffer of bits to write out

@@ -39,7 +39,7 @@ import java.util.NoSuchElementException;
  * @author Robert Sedgewick
  * @author Kevin Wayne
  */
-public final class BinaryIn {
+public final class BinaryIn implements AutoCloseable {
     private static final int EOF = -1;   // end of file
 
     private BufferedInputStream in;      // the input stream
@@ -389,6 +389,15 @@ public final class BinaryIn {
             out.write(c);
         }
         out.flush();
+    }
+
+    @Override
+    public void close() {
+        try {
+            in.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
 
