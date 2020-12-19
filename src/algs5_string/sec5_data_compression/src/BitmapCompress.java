@@ -12,8 +12,9 @@ import java.io.InputStream;
 
 /**
  * 位图压缩，使用了游程编码（Run-Length Encoding）。位图每行的开始和结束都是 0，所以每行的游程数量为奇数。
- * <p>
- * 令游程长度在 0 到 255 之间，采用 8 位编码。
+ *
+ * 令游程长度在 0 到 255 之间，采用 8 位编码。游程不需要存储所在位是 0 还是 1。两个游程表示的位
+ * 相反。当一串位长度大于游程最大长度，则需要添加 0 长度游程以使得位反转正确。
  */
 public class BitmapCompress {
 
@@ -59,6 +60,7 @@ public class BitmapCompress {
                 }
                 cnt++;
             }
+            // 别忘了写入最后一个游程长度
             binaryOut.write(cnt);
             binaryOut.flush();
 
@@ -79,12 +81,11 @@ public class BitmapCompress {
 
     public static void main(String[] args) {
         PictureDump.dump(AlgsDataIO.openQ32x48(), 32, 48, 6);
-
         PictureDump.dump(new ByteArrayInputStream(compress(AlgsDataIO.openQ32x48())),
                 32, 36, 6);
 
+        // 游程编码随着位图分辨率的提高，效果也会提高。
         PictureDump.dump(AlgsDataIO.openQ64x96(), 64, 96, 6);
-
         PictureDump.dump(new ByteArrayInputStream(compress(AlgsDataIO.openQ64x96())),
                 64, 36, 6);
     }
