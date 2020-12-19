@@ -4,7 +4,10 @@ import util.algs.In;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * 用来获取 algs 测试数据。
@@ -53,11 +56,44 @@ public class AlgsDataIO {
     }
 
     public static String[] getTinyTale() {
-        return newIn("tinyTale.txt").readAllStrings();
+        try {
+            return Files.readAllLines(Paths.get(DIR, "tinyTale.txt")).toArray(new String[0]);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static InputStream getTinyTaleIn() {
+        try {
+            return new FileInputStream(DIR + "tinyTale.txt");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String[] getTale() {
         return newIn("tale.txt").readAllStrings();
+    }
+
+    /**
+     * 《双城记》第一章
+     *
+     * @return
+     */
+    public static String[] getMedTale() {
+        try {
+            return Files.readAllLines(Paths.get(DIR, "medTale.txt")).toArray(new String[0]);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static InputStream getMedTaleIn() {
+        try {
+            return new FileInputStream(DIR + "medTale.txt");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String[] getLeipzig1M() {
