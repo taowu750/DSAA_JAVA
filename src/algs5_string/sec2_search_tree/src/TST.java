@@ -48,7 +48,9 @@ public class TST<V> implements StringST<V> {
 
     @Override
     public String longestPrefixOf(String s) {
-        return null;
+        int length = search(root, s, 0, 0);
+
+        return s.substring(0, length);
     }
 
     @Override
@@ -124,6 +126,24 @@ public class TST<V> implements StringST<V> {
         }
 
         return x;
+    }
+
+    private int search(Node x, String s, int d, int length) {
+        if (x == null)
+            return length;
+        if (d == s.length())
+            return length;
+
+        char c = s.charAt(d);
+        if (c == x.c) {
+            if (x.v != null)
+                length = d + 1;
+            return search(x.mid, s, d + 1, length);
+        } else if (c < x.c) {
+            return search(x.left, s, d, length);
+        } else {
+            return search(x.right, s, d, length);
+        }
     }
 
     private void collect(Node x, String pre, Queue<String> q) {

@@ -38,7 +38,7 @@ public class FrequencyCounter {
 
     public static void testSpeed(SymbolTable<String, Integer> st, boolean isTestLargeData) {
         String[] tinyTale = AlgsDataIO.getTinyTale();
-        String[] tale = AlgsDataIO.getTale();
+        String[] tale = AlgsDataIO.getTale().split("\n");
         String[] leipzig1M = null;
         if (isTestLargeData)
             leipzig1M = AlgsDataIO.getLeipzig1M();

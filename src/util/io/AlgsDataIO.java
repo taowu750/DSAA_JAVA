@@ -71,10 +71,6 @@ public class AlgsDataIO {
         }
     }
 
-    public static String[] getTale() {
-        return newIn("tale.txt").readAllStrings();
-    }
-
     /**
      * 《双城记》第一章
      *
@@ -83,6 +79,19 @@ public class AlgsDataIO {
     public static String[] getMedTale() {
         try {
             return Files.readAllLines(Paths.get(DIR, "medTale.txt")).toArray(new String[0]);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 《双城记》全文
+     *
+     * @return
+     */
+    public static String getTale() {
+        try {
+            return String.join("\n", Files.readAllLines(Paths.get(DIR, "tale.txt")));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -235,6 +244,14 @@ public class AlgsDataIO {
         }
     }
 
+    public static String getGenomeVirus() {
+        try {
+            return InputStreamGetter.getString(new FileInputStream(DIR + "genomeVirus.txt"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * 字母 q 32x48 的位图。
      *
@@ -257,6 +274,19 @@ public class AlgsDataIO {
         try {
             return new FileInputStream(DIR + "q64x96.bin");
         } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * 用来测试 LZW 的简单文件
+     *
+     * @return
+     */
+    public static String getAbraLZW() {
+        try {
+            return InputStreamGetter.getString(new FileInputStream(DIR + "abraLZW.txt"));
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

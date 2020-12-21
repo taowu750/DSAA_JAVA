@@ -4,6 +4,7 @@ import util.algs.BinaryIn;
 import util.algs.Picture;
 
 import java.awt.*;
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -39,6 +40,10 @@ public class PictureDump {
 
     public static void dump(InputStream in, int width, int height) {
         dump(in, width, height, 20);
+    }
+
+    public static void dump(byte[] bytes, int width, int height, int bitSize) {
+        dump(new ByteArrayInputStream(bytes), width, height, bitSize);
     }
 
     public static void main(String[] args) throws FileNotFoundException {

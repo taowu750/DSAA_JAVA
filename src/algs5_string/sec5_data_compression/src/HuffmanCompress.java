@@ -13,15 +13,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 霍夫曼编码，这是一种变长前缀码，用来压缩文本文件。一段文本中出现次数越频繁的字符，
+ * 霍夫曼编码，这是一种变长前缀码，可以用来压缩文本文件。一段文本中出现次数越频繁的字符，
  * 我们让它编码长度越短。每个字符的编码不是其他任何一种编码的前缀，这样我们就能将字符
  * 编码写入文件而不用加上任何分隔符。
- *
+ * <p>
  * 霍夫曼编码使用单词查找树表示前缀码。其中叶子节点存放不同的字符。左链接表示 0，右链接表示 1。
  * 从根节点出发到叶结点，也就是对应字符的编码。
- *
+ * <p>
  * 我们会先写入单词查找树的字节流形式，然后将文本编码写入。这样解码的时候就先读取单词查找树，
  * 然后利用它进行解码。
+ * <p>
+ * 霍夫曼算法不仅能用于自然语言文本，对各种类型的文件都有效。霍夫曼算法为输入中的定长模式
+ * 产生一张变长的编码编译表。
  */
 public class HuffmanCompress {
 
@@ -35,7 +38,7 @@ public class HuffmanCompress {
     }
 
     public static void main(String[] args) {
-        PictureDump.dump(AlgsDataIO.getMedTaleIn(), 512, 90, 3);
+        PictureDump.dump(AlgsDataIO.getMedTaleIn(), 512, 88, 3);
 
         PictureDump.dump(new ByteArrayInputStream(compress(String.join("\n", AlgsDataIO.getMedTale()))),
                 512, 47, 3);
@@ -53,8 +56,8 @@ public class HuffmanCompress {
         Node root = buildTrie(freqs);
         Map<Character, String> chEncoding = buildCode(root);
         // 进行压缩
-        try(ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-            BinaryOut binaryOut = new BinaryOut(byteOut)) {
+        try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+             BinaryOut binaryOut = new BinaryOut(byteOut)) {
             // 写入单词查找树的二进制表示
             writeTrie(binaryOut, root);
             // 写入字符个数
