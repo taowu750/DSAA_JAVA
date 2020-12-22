@@ -115,7 +115,7 @@ public class LZWCompress {
                 codeWord = binaryIn.readInt(W);
                 // 下一个编码对应的字符串
                 String s = st[codeWord];
-                // 如果读取的编码当前反编译表中没有，此时 s 为 null
+                // 如果读取的编码当前反编译表中没有，此时 s 为 null，是特殊情况
                 if (i == codeWord)
                     s = val + val.charAt(0);  // 将上一个字符串和它的首字母拼接得到 codeWord 对应的字符串
                 // 编码空间未用尽时
