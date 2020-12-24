@@ -1,5 +1,6 @@
 package algs6_background.sec1_event_driven_simulation.src;
 
+import util.algs.StdDraw;
 import util.datastructure.MyPriorityQueue;
 
 /**
@@ -11,9 +12,8 @@ import util.datastructure.MyPriorityQueue;
  * <p>
  * 当我们知道粒子的位置、大小和速度，以及墙的位置时，我们就可以计算它是否会和墙
  * 发生碰撞。粒子之间的计算类似，只是更加复杂。预测结果通常是不会发生碰撞，此时
- * 不需要向优先队列中插入任何东西。有可能预测的时间点太过遥远，这种事件很可能被
- * 干扰而不会发生，所以我们指定一个 limit 参数作为有效的时间段，这样就能忽略时间
- * 大于 limit 的所有事件。
+ * 不需要向优先队列中插入任何东西。我们指定一个 limit 参数作为有效的时间段，这样
+ * 就能忽略时间大于 limit 的所有事件，从而在 limit 时停止模拟。
  * <p>
  * 有可能预测的许多事件都不会发生，因为它们被其它的碰撞打断了。为了处理这种情况，
  * 我们让每个粒子记录它的碰撞次数。当从优先队列中取出一个事件进行处理时，我们会
@@ -32,12 +32,95 @@ import util.datastructure.MyPriorityQueue;
  */
 public class CollisionSystem {
 
-    private Particle[] particles;
-    private MyPriorityQueue<Event> priorityQueue;
-    private double time;
+    public static void main(String[] args) throws InterruptedException {
+        StdDraw.show(0);
+        int N = 5;
+        Particle[] particles = new Particle[N];
 
-    public CollisionSystem() {
-        priorityQueue = new MyPriorityQueue<>(MyPriorityQueue.Order.MIN);
+        for (int i = 0; i < N; i++) {
+            particles[i] = new Particle();
+        }
+        CollisionSystem system = new CollisionSystem(particles);
+        // 10000 毫秒后停止。大约每 1 毫秒绘制一次
+        system.simulate(10000, 1);
+    }
+
+    private Particle[] particles;
+    private MyPriorityQueue<Event> pq;
+    private double time;  // 模拟时钟
+
+    public CollisionSystem(Particle[] particles) {
+        this.particles = particles;
+    }
+
+    /**
+     * 重新画出所有粒子。
+     *
+     * @param limit 当模拟时钟超过 limit 时，将不再绘制
+     * @param Hz 添加绘制事件的频率。原来控制重绘速度
+     */
+    public void redraw(double limit, double Hz) {
+        StdDraw.clear();
+        for (Particle particle : particles) {
+            particle.draw();
+        }
+        StdDraw.show(20);
+        if (time < limit)
+            pq.offer(new Event(time + 1. / Hz, null, null));
+    }
+
+    /**
+     * 进行模拟。
+     *
+     * @param limit 当模拟时钟超过 limit 时，将停止模拟
+     * @param Hz 重绘频率
+     */
+    public void simulate(double limit, double Hz) {
+        pq = new MyPriorityQueue<>(MyPriorityQueue.Order.MIN);
+        for (Particle particle : particles) {
+            predictCollisions(particle, limit);
+        }
+        // 添加最开始的重绘事件，在开始时绘制所有粒子
+        pq.offer(new Event(0, null, null));
+
+        int cnt = 0;
+        while (!pq.isEmpty()) {
+            Event event = pq.poll();
+            // 忽略失效的碰撞事件
+            if (!event.isValid())
+                continue;
+
+            // 每 500 次打印一次有效事件
+            cnt++;
+            if (cnt % 500 == 0)
+                System.out.println(event);
+
+            for (Particle particle : particles) {
+                // 更新粒子位置
+                particle.move(event.time - time);
+            }
+            // 更新模拟时钟
+            time = event.time;
+
+            Particle a = event.a, b = event.b;
+            if (a != null && b != null)
+                // 粒子 a 和粒子 b 相撞
+                a.bounceOff(b);
+            else if (a != null)
+                // 粒子 a 和垂直墙壁相撞
+                a.bounceOffVerticalWall();
+            else if (b != null)
+                // 粒子 b 和水平墙壁相撞
+                b.bounceOffHorizontalWall();
+            else
+                // 重绘事件
+                redraw(limit, Hz);
+
+            // 添加 a、b 的下一次碰撞事件
+            predictCollisions(a, limit);
+            predictCollisions(b, limit);
+        }
+        System.out.println("\n模拟结束");
     }
 
     /**
@@ -47,8 +130,8 @@ public class CollisionSystem {
      *
      * 使用 Event 表示这四种事件，因此允许粒子的值为 null：
      *  - a 和 b 均不为空：粒子与粒子碰撞
-     *  - a 非空 b 为空：粒子 a 与水平墙体碰撞
-     *  - a 为空 b 非空：粒子 b 与垂直墙体碰撞
+     *  - a 非空 b 为空：粒子 a 与垂直墙体碰撞
+     *  - a 为空 b 非空：粒子 b 与水平墙体碰撞
      *  - a、b 都为空：重绘事件
      */
     private class Event implements Comparable<Event> {
@@ -85,6 +168,15 @@ public class CollisionSystem {
 
             return true;
         }
+
+        @Override
+        public String toString() {
+            return "Event{" + '\n' +
+                    "\ttime=" + time + ", \n" +
+                    "\ta=" + a + ", \n" +
+                    "\tb=" + b + "\n" +
+                    '}';
+        }
     }
 
     private void predictCollisions(Particle a, double limit) {
@@ -95,16 +187,16 @@ public class CollisionSystem {
         for (int i = 0; i < particles.length; i++) {
             double dt = a.timeToHit(particles[i]);
             if (time + dt <= limit) {
-                priorityQueue.offer(new Event(time + dt, a, particles[i]));
+                pq.offer(new Event(time + dt, a, particles[i]));
             }
         }
-        // 添加粒子 a 与 水平墙壁碰撞的事件
-        double dtX = a.timeToHitHorizontalWall();
-        if (time + dtX <= limit)
-            priorityQueue.offer(new Event(time + dtX, a, null));
         // 添加粒子 a 与 垂直墙壁碰撞的事件
-        double dtY = a.timeToHitVerticalWall();
+        double dtX = a.timeToHitVerticalWall();
+        if (time + dtX <= limit)
+            pq.offer(new Event(time + dtX, a, null));
+        // 添加粒子 a 与 水平墙壁碰撞的事件
+        double dtY = a.timeToHitHorizontalWall();
         if (time + dtY <= limit)
-            priorityQueue.offer(new Event(time + dtY, null, a));
+            pq.offer(new Event(time + dtY, null, a));
     }
 }
