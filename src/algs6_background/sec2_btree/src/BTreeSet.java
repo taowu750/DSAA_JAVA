@@ -1,6 +1,7 @@
 package algs6_background.sec2_btree.src;
 
 
+import java.util.Comparator;
 import java.util.Objects;
 
 /**
@@ -22,7 +23,7 @@ import java.util.Objects;
  * <p>
  * 内部结点 N 中每个键都和一个结点相关联，在以此结点为根的子树中，所有的键都大于等于与此
  * 结点关联的键，而小于 N 中更大的键（如果存在的话）。为了方便表示使用一个特殊的哨兵键“*”，
- * 它小于所有的键。
+ * 它小于所有的键。哨兵键位于根结点和树每层最左结点中。
  * <p>
  * 根结点在初始化时仅含有哨兵键，我们会在内部结点中使用键的多个副本来引导查找。
  * <p>
@@ -40,12 +41,21 @@ import java.util.Objects;
 public class BTreeSet<K> {
 
     private Page<K> root;
+    private PageFactory pageFactory;
     private int maxNumNodes;
+    private Comparator<K> comparator;
+
+    public BTreeSet(PageFactory pageFactory, int maxNumNodes, Comparator<K> comparator) {
+        Objects.requireNonNull(pageFactory);
+
+        this.pageFactory = pageFactory;
+        root = pageFactory.newRootPage(maxNumNodes, comparator, true);
+        this.maxNumNodes = maxNumNodes;
+        this.comparator = comparator;
+    }
 
     public BTreeSet(PageFactory pageFactory, int maxNumNodes) {
-        Objects.requireNonNull(pageFactory);
-        root = pageFactory.newPage(maxNumNodes);
-        this.maxNumNodes = maxNumNodes;
+        this(pageFactory, maxNumNodes, null);
     }
 
     public boolean contains(K key) {
@@ -61,20 +71,32 @@ public class BTreeSet<K> {
     }
 
     public void add(K key) {
-        add(root, key);
+        Page<K> splitPage = add(root, key);
+        if (splitPage != null) {
+            // 如果 root 溢出，发生分裂，则生成新的根结点
+            Page<K> tmp = root;
+            root = pageFactory.newRootPage(maxNumNodes, comparator, false);
+            root.attach(tmp);
+            root.attach(splitPage);
+        }
     }
 
-    private void add(Page<K> page, K key) {
+    private Page<K> add(Page<K> page, K key) {
         if (page.isExternal()) {
-            page.add(key);
-            return;
+            // 如果 page 是外部页，向其中插入 key。如果发生溢出，则返回右半边页
+            return page.add(key);
         }
 
-        Page<K> nextPage = page.next(key);
-        add(nextPage, key);
-        if (nextPage.isFull()) {
-            page.add(nextPage.split());
+        Page<K> result = null;
+        Page<K> subPage = page.next(key);
+        Page<K> splitPage = add(subPage, key);
+        // 如果 splitPage 不为 null，表示子页发生溢出。
+        if (splitPage != null) {
+            // page 也可能溢出，此时返回值是 page 的右半边页
+            result = page.attach(splitPage);
         }
-        nextPage.flush();
+        subPage.flush();
+
+        return result;
     }
 }

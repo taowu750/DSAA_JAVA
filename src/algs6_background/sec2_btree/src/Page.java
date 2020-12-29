@@ -16,18 +16,33 @@ public interface Page<K> {
     void flush();
 
     /**
-     * 将键插入当前（外部）页中。
+     * 将键插入当前（外部）页中。如果插入后页溢出，则分裂页并将右半边页返回。否则返回 null。
      *
      * @param key
      */
-    void add(K key);
+    Page<K> add(K key);
 
     /**
-     * 将 p 中最小键插入到当前（内部）页中，将插入的条目和 p 关联起来。
+     * 将 p 中最小键设置到当前（内部）页中（不存在就插入），将设置的条目和 p 关联起来。
+     * 如果设置后页溢出，则分裂页并将右半边页返回。否则返回 null。
      *
      * @param p
      */
-    void add(Page<K> p);
+    Page<K> attach(Page<K> p);
+
+    /**
+     * 返回此 Page 中的最小键
+     *
+     * @return
+     */
+    Object minKey();
+
+    /**
+     * 返回页中包含键的数量
+     *
+     * @return
+     */
+    int size();
 
     /**
      * 当前页是否是外部页。
@@ -58,13 +73,6 @@ public interface Page<K> {
      * @return
      */
     boolean isFull();
-
-    /**
-     * 分割当前页，将右半边移动到一个新的页中并返回。
-     *
-     * @return
-     */
-    Page<K> split();
 
     /**
      * 页中所有键的迭代器。
