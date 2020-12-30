@@ -18,7 +18,6 @@ public class SuffixArray {
     private CharSequence text;
     // 使用字符序列视图类减少空间占用
     private SuffixView[] suffixes;
-    private int[] suffixIndexes;
 
     public SuffixArray(CharSequence text) {
         Objects.requireNonNull(text);
@@ -30,7 +29,7 @@ public class SuffixArray {
         for (int i = 0; i < text.length(); i++) {
             suffixes[i] = new SuffixView(text, i);
         }
-        suffixIndexes = Quick3CharSequence.sort(suffixes);
+        Quick3CharSequence.sort(suffixes);
     }
 
     /**
@@ -59,7 +58,7 @@ public class SuffixArray {
      * @return
      */
     int index(int i) {
-        return suffixIndexes[i];
+        return text.length() - suffixes[i].length();
     }
 
     /**
