@@ -291,6 +291,15 @@ public class AlgsDataIO {
         }
     }
 
+    /**
+     * 小型容量图，由于网络流算法中。
+     *
+     * @return
+     */
+    public In openTinyFN() {
+        return newIn("tinyFN.txt");
+    }
+
 
     private static In newIn(String fileName) {
         return new In(DIR + fileName);

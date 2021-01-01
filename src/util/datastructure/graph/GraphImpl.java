@@ -2,9 +2,7 @@ package util.datastructure.graph;
 
 import java.util.*;
 
-// TODO: 删除时需要不要缩减内部实现的空间
 // TODO: 实现结点、边的 Object 方法
-// TODO: 快速添加结点的方法
 
 /**
  * {@link IGraph}的默认实现。此时需要在构造的时候指定图的类型（{@link #type()}）。
