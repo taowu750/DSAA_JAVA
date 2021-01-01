@@ -29,6 +29,11 @@ public class HashMapProps implements IProps {
     }
 
     @Override
+    public boolean containsProp(Object key) {
+        return props.containsKey(key);
+    }
+
+    @Override
     public <V> V getProp(Object key) {
         if (!props.containsKey(key))
             throw new IllegalArgumentException("key is not exist: " + key);

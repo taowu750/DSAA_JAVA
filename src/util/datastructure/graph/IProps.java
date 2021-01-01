@@ -45,6 +45,14 @@ public interface IProps {
     }
 
     /**
+     * 判断属性是否存在。
+     *
+     * @param key 属性键
+     * @return 属性是否存在
+     */
+    boolean containsProp(Object key);
+
+    /**
      * 获取键为 key 的属性值。如果属性不存在抛出{@link IllegalArgumentException}。
      *
      * @param key 属性的键
