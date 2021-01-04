@@ -5,7 +5,7 @@ import java.util.function.BiFunction;
 
 // TODO: 允许迭代器删除
 /**
- * {@link IGraph}的默认实现。此时需要在构造的时候指定图的类型（{@link #type()}）。
+ * {@link IGraph}的默认实现。此实现需要在构造的时候指定图的类型（{@link #type()}）。
  * <p>
  * 此实现的顶点 id 和边 id 均从 0 开始，且不能为负数。id 的增长策略和数据库的自增主键类似，
  * 会从已分配的最大 id 处不断加 1。
@@ -81,6 +81,7 @@ public class GraphImpl extends AbstractGraph {
     private int modCount;
 
     public GraphImpl(GraphType type) {
+        Objects.requireNonNull(type);
         this.type = type;
     }
 
@@ -161,8 +162,6 @@ public class GraphImpl extends AbstractGraph {
 
     @Override
     public DeletedVertexWithEdge removeVertex(int vid) {
-        checkId(vid);
-
         // 删除顶点
         VertexEntry deleted = _vertexEntries().remove(vid);
         if (deleted == null)
@@ -449,6 +448,8 @@ public class GraphImpl extends AbstractGraph {
         // 将图中顶点和边进行关联
         vertexEntries.get(from.id()).attachEdge(edge);
         vertexEntries.get(to.id()).attachEdge(edge);
+        
+        modCount++;
 
         return nextEid;
     }
@@ -519,6 +520,7 @@ public class GraphImpl extends AbstractGraph {
                 }
                 break;
         }
+        modCount++;
 
         return edges;
     }
@@ -538,6 +540,8 @@ public class GraphImpl extends AbstractGraph {
 
         if (commonEdgeIds.size() == 0)
             return null;
+        
+        modCount++;
 
         return _detachEdge(fromEntry, toEntry, commonEdgeIds.first());
     }
@@ -626,6 +630,7 @@ public class GraphImpl extends AbstractGraph {
             VertexEntry other = vertexEntries.get(removedEdge.other(vertexEntry.vertex).id());
             _detachEdge(vertexEntry, other, removedEdge);
         }
+        modCount++;
 
         return removedEdges;
     }
@@ -728,14 +733,14 @@ public class GraphImpl extends AbstractGraph {
         if (vertexEntries == null)
             vertexEntries = new TreeMap<>();
 
-        return vertexEntries.isEmpty() ? 0 : vertexEntries.lastKey();
+        return vertexEntries.isEmpty() ? -1 : vertexEntries.lastKey();
     }
 
     private int maxEid() {
         if (edgeMap == null)
             edgeMap = new TreeMap<>();
 
-        return edgeMap.isEmpty() ? 0 : edgeMap.lastKey();
+        return edgeMap.isEmpty() ? -1 : edgeMap.lastKey();
     }
 
     private void checkId(int id) {

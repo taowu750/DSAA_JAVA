@@ -187,8 +187,7 @@ public interface IGraph extends IProps {
      * 根据顶点 id 删除一个顶点并返回它和与它相关联的边。顶点 id 不存在返回 null。
      *
      * 被删除的顶点的{@link IGraphVertex#graph()}方法应该返回 null。
-     * 它的边的{@link IGraphEdge#graph()}方法也应该返回 null。
-     * 与这些边关联的另一个顶点也应该被这些边返回为 null。
+     * 它的边的{@link IGraphEdge#graph()}、{@link IGraphEdge#from()}和{@link IGraphEdge#to()}方法也应该返回 null。
      *
      * @param vid 顶点 id
      * @return 返回删除的顶点和它相关联的边；不存在顶点返回 null

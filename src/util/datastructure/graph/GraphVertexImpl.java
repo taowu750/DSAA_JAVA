@@ -12,11 +12,7 @@ public class GraphVertexImpl implements IGraphVertex {
     protected int id;
 
     public GraphVertexImpl() {
-    }
-
-    public GraphVertexImpl(IGraph graph, int id) {
-        this.graph = graph;
-        this.id = id;
+        id = -1;
     }
 
     @Override

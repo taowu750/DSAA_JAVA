@@ -12,10 +12,6 @@ public class GraphEdgeImpl implements IGraphEdge {
     protected EdgeType type;
     protected IGraphVertex from, to;
 
-    public GraphEdgeImpl(EdgeType type) {
-        this.type = type;
-    }
-
     public GraphEdgeImpl(EdgeType type, IGraphVertex from, IGraphVertex to) {
         this.id = -1;
         this.type = type;
@@ -25,6 +21,10 @@ public class GraphEdgeImpl implements IGraphEdge {
 
     public GraphEdgeImpl(IGraphVertex from, IGraphVertex to) {
         this(EdgeType.DIRECTED, from, to);
+    }
+
+    public GraphEdgeImpl(EdgeType type) {
+        this(type, null, null);
     }
 
     @Override
