@@ -2,6 +2,7 @@ package algs2_sort.sec3_quick_sort;
 
 import algs2_sort.sec1_primary_sort.src.InsertionSort;
 import algs2_sort.src.AbstractSort;
+import org.junit.jupiter.api.Test;
 
 /**
  * <p>
@@ -35,6 +36,13 @@ public class E22_Quick3waySplit extends AbstractSort {
         simpleTest(new E22_Quick3waySplit());
     }
 
+    @Test
+    public void test() throws InterruptedException {
+        for (int i = 0; i < 3000; i++) {
+            simpleTest(new E22_Quick3waySplit(), 300, false);
+        }
+    }
+
 
     private void sort(Comparable[] a, int lo, int hi) {
         if (hi - lo > 10) {
@@ -44,18 +52,20 @@ public class E22_Quick3waySplit extends AbstractSort {
             Comparable v = median3(a, lo, hi);
             while (true) {
                 while (less(a[++i], v));
-                while (less(v, a[--j]));
+                while (less(v, a[--j]))
+                    if (j == lo)
+                        break;
 
                 if (i == j && equal(a[i], v))
                     exch(a, ++p, i);
-                else if (i < j) {
-                    exch(a, i, j);
-                    if (equal(a[i], v))
-                        exch(a, ++p, i);
-                    if (equal(a[j], v))
-                        exch(a, --q, j);
-                } else
+                if (i >= j)
                     break;
+
+                exch(a, i, j);
+                if (equal(a[i], v))
+                    exch(a, ++p, i);
+                if (equal(a[j], v))
+                    exch(a, --q, j);
             }
 
             i = j + 1;
@@ -72,16 +82,14 @@ public class E22_Quick3waySplit extends AbstractSort {
     }
 
     private Comparable median3(Comparable[] a, int lo, int hi) {
-        int center = (lo + hi) / 2;
-
-        if (a[lo].compareTo(a[center]) > 0)
-            exch(a, lo, center);
-        if (a[lo].compareTo(a[hi]) > 0)
-            exch(a, lo, hi);
-        if (a[center].compareTo(a[hi]) > 0)
-            exch(a, center, hi);
-
-        exch(a, lo, center);
+        int mid = lo + (hi - lo) / 2;
+        if (less(a[mid], a[lo]))
+            exch(a, lo, mid);
+        if (less(a[hi], a[mid]))
+            exch(a, hi, mid);
+        if (less(a[mid], a[lo]))
+            exch(a, lo, mid);
+        exch(a, lo, mid);
 
         return a[lo];
     }
