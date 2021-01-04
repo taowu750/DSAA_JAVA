@@ -1,9 +1,9 @@
 package util.datastructure.graph;
 
 import java.util.*;
+import java.util.function.BiFunction;
 
-// TODO: 实现结点、边的 Object 方法
-
+// TODO: 允许迭代器删除
 /**
  * {@link IGraph}的默认实现。此时需要在构造的时候指定图的类型（{@link #type()}）。
  * <p>
@@ -17,45 +17,68 @@ import java.util.*;
  */
 public class GraphImpl extends AbstractGraph {
 
-    private static class VertexEdges {
+    private static class VertexEntry {
         IGraphVertex vertex;
-        /* 分别保存出边、入边、无向边；每个 Map 中的边不重复 */
-        Map<Integer, IGraphEdge> outEdges;
-        Map<Integer, IGraphEdge> inEdges;
-        Map<Integer, IGraphEdge> undirectedEdges;
+        TreeMap<Integer, IGraphEdge> attachedEdges;
+        int outDegree, inDegree, edgeNum;
 
-        VertexEdges(IGraphVertex vertex) {
+        VertexEntry(IGraphVertex vertex) {
             this.vertex = vertex;
         }
 
-        Map<Integer, IGraphEdge> outs() {
-            if (outEdges == null)
-                outEdges = new HashMap<>(3);
-            return outEdges;
-        }
+        TreeMap<Integer, IGraphEdge> _attachedEdges() {
+            if (attachedEdges == null) {
+                attachedEdges = new TreeMap<>();
+            }
 
-        Map<Integer, IGraphEdge> ins() {
-            if (inEdges == null)
-                inEdges = new HashMap<>(3);
-            return inEdges;
-        }
-
-        Map<Integer, IGraphEdge> undirected() {
-            if (undirectedEdges == null)
-                undirectedEdges = new HashMap<>(3);
-            return undirectedEdges;
+            return attachedEdges;
         }
 
         boolean noEdge() {
-            return outEdges == null && inEdges == null && undirectedEdges == null;
+            return attachedEdges == null || attachedEdges.isEmpty();
+        }
+
+        void attachEdge(IGraphEdge edge) {
+            if (!_attachedEdges().containsKey(edge.id())) {
+                attachedEdges.put(edge.id(), edge);
+                if (!edge.isDirected()) {
+                    outDegree++;
+                    inDegree++;
+                } else if (edge.isFrom(vertex)) {
+                    outDegree++;
+                } else {
+                    inDegree++;
+                }
+                edgeNum++;
+            }
+        }
+
+        void detachEdge(int eid) {
+            IGraphEdge edge = _attachedEdges().get(eid);
+            if (edge != null) {
+                attachedEdges.remove(eid);
+                if (!edge.isDirected()) {
+                    outDegree--;
+                    inDegree--;
+                } else if (edge.isFrom(vertex)) {
+                    outDegree--;
+                } else {
+                    inDegree--;
+                }
+                edgeNum--;
+            }
+        }
+
+        void detachEdge(IGraphEdge edge) {
+            detachEdge(edge.id());
         }
     }
 
     private GraphType type;
-    private TreeSet<Integer> vertexIds;
-    private TreeSet<Integer> edgeIds;
-    private Map<Integer, VertexEdges> vertexEdges;
-    private Map<Integer, IGraphEdge> edges;
+    private TreeMap<Integer, VertexEntry> vertexEntries;
+    private TreeMap<Integer, IGraphEdge> edgeMap;
+
+    private int modCount;
 
     public GraphImpl(GraphType type) {
         this.type = type;
@@ -68,12 +91,12 @@ public class GraphImpl extends AbstractGraph {
 
     @Override
     public int vertexNum() {
-        return _vertexEdges().size();
+        return _vertexEntries().size();
     }
 
     @Override
     public int edgeNum() {
-        return _edges().size();
+        return _edgeMap().size();
     }
 
     /**
@@ -90,16 +113,18 @@ public class GraphImpl extends AbstractGraph {
             if (vGraph == this)
                 return vertex.id();
             else
-                throw new IllegalArgumentException("this vertex already exists in another graph");
+                throw new IllegalArgumentException("this vertex already exists in another graph: " + vertex);
         }
 
         // 生成 id
-        int nextId = nextVid();
+        int nextId = maxVid() + 1;
         // 绑定顶点
         vertex.unsafeSetGraph(this);
         vertex.unsafeSetId(nextId);
-        // 将 id 与顶点进行映射
-        _vertexEdges().put(nextId, new VertexEdges(vertex));
+        // 将 id 与顶点进行关联
+        _vertexEntries().put(nextId, new VertexEntry(vertex));
+
+        modCount++;
 
         return nextId;
     }
@@ -119,16 +144,17 @@ public class GraphImpl extends AbstractGraph {
             if (vGraph == this)
                 return false;
             else
-                throw new IllegalArgumentException("this vertex already exists in another graph");
+                throw new IllegalArgumentException("this vertex already exists in another graph: " + vertex);
         }
 
-        if (_vertexEdges().containsKey(vid))
+        if (_vertexEntries().containsKey(vid))
             return false;
 
         vertex.unsafeSetGraph(this);
         vertex.unsafeSetId(vid);
-        vertexEdges.put(vid, new VertexEdges(vertex));
-        _vids().add(vid);
+        vertexEntries.put(vid, new VertexEntry(vertex));
+
+        modCount++;
 
         return false;
     }
@@ -137,244 +163,617 @@ public class GraphImpl extends AbstractGraph {
     public DeletedVertexWithEdge removeVertex(int vid) {
         checkId(vid);
 
-        VertexEdges deleted = _vertexEdges().remove(vid);
+        // 删除顶点
+        VertexEntry deleted = _vertexEntries().remove(vid);
         if (deleted == null)
             return null;
 
         // 解绑顶点
         deleted.vertex.unsafeSetGraph(null);
+        deleted.vertex.unsafeSetId(-1);
         DeletedVertexWithEdge deletedVertexWithEdge;
         if (deleted.noEdge()) {
             // 没有关联的边，则返回此顶点和空边列表
             deletedVertexWithEdge = new DeletedVertexWithEdge(deleted.vertex, Collections.emptyList());
         } else {
-            TreeSet<Integer> eids = _eids();
-            List<IGraphEdge> deletedEdges = new ArrayList<>();
-            // 删除入边
-            if (deleted.inEdges != null) {
-                Collection<IGraphEdge> edges = deleted.inEdges.values();
-                for (IGraphEdge deletedEdge : edges) {
-                    // 删除关联边的 id
-                    eids.remove(deletedEdge.id());
-                    // 删除这条边另一个顶点中，对应的出边
-                    VertexEdges other = vertexEdges.get(deletedEdge.other(deleted.vertex).id());
-                    other.outEdges.remove(deletedEdge.id());
-                    // 解绑边
-                    deletedEdge.unsafeSetFrom(null);
-                    deletedEdge.unsafeSetTo(null);
-                }
-                // 添加到删除边的列表中
-                deletedEdges.addAll(edges);
-            }
-            // 删除出边
-            if (deleted.outEdges != null) {
-                Collection<IGraphEdge> edges = deleted.outEdges.values();
-                for (IGraphEdge deletedEdge : edges) {
-                    // 删除关联边的 id
-                    eids.remove(deletedEdge.id());
-                    // 删除这条边另一个顶点中，对应的入边
-                    VertexEdges other = vertexEdges.get(deletedEdge.other(deleted.vertex).id());
-                    other.inEdges.remove(deletedEdge.id());
-                    // 解绑边
-                    deletedEdge.unsafeSetFrom(null);
-                    deletedEdge.unsafeSetTo(null);
-                }
-                // 添加到删除边的列表中
-                deletedEdges.addAll(edges);
-            }
-            // 删除无向边
-            if (deleted.undirectedEdges != null) {
-                Collection<IGraphEdge> edges = deleted.undirectedEdges.values();
-                for (IGraphEdge deletedEdge : edges) {
-                    // 删除关联边的 id
-                    eids.remove(deletedEdge.id());
-                    // 删除这条边另一个顶点中，对应的无向边
-                    VertexEdges other = vertexEdges.get(deletedEdge.other(deleted.vertex).id());
-                    other.undirectedEdges.remove(deletedEdge.id());
-                    // 解绑边
-                    deletedEdge.unsafeSetFrom(null);
-                    deletedEdge.unsafeSetTo(null);
-                }
-                // 添加到删除边的列表中
-                deletedEdges.addAll(edges);
+            // 初始化边 Map
+            _edgeMap();
+            // 删除顶点所有关联的边
+            List<IGraphEdge> deletedEdges = new ArrayList<>(deleted.attachedEdges.values());
+            for (IGraphEdge deletedEdge : deletedEdges) {
+                // 删除这条边另一个顶点中的此边
+                VertexEntry other = vertexEntries.get(deletedEdge.other(deleted.vertex).id());
+                _detachEdge(null, other, deletedEdge);
             }
 
             deletedVertexWithEdge = new DeletedVertexWithEdge(deleted.vertex, deletedEdges);
         }
-        // 删除 vid
-        _vids().remove(vid);
+
+        modCount++;
 
         return deletedVertexWithEdge;
     }
 
     @Override
     public IGraphVertex vertex(int vid) {
-        VertexEdges vertexEdges = _vertexEdges().get(vid);
-        return vertexEdges != null ? vertexEdges.vertex : null;
-    }
-
-    @Override
-    public Iterable<IGraphEdge> vOutEdges(int vid, int order) {
-        return null;
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        return vertexEntry != null ? vertexEntry.vertex : null;
     }
 
     @Override
     public boolean vIsAttachEdge(int vid, int eid) {
-        return false;
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        return vertexEntry != null && !vertexEntry.noEdge()
+                && vertexEntry.attachedEdges.containsKey(eid);
+    }
+
+    @Override
+    public Iterable<IGraphEdge> vOutEdges(int vid, int order) {
+        return vChooseEdges(vid, order, CHOOSE_EDGE_OUT);
+    }
+
+    private Iterable<IGraphEdge> vChooseEdges(int vid, int order, int chooseEdge) {
+        VertexEntry vertexEntry;
+        if ((vertexEntry = _vertexEntries().get(vid)) != null && !vertexEntry.noEdge()) {
+            switch (order) {
+                default:
+                case IGraph.ITER_DEFAULT:
+                case IGraph.ITER_ASC_BY_ID:
+                    return () -> new OrderByIdEdgeIter(vertexEntry.attachedEdges, chooseEdge,
+                            vertexEntry.vertex, true);
+
+                case IGraph.ITER_DESC_BY_ID:
+                    return () -> new OrderByIdEdgeIter(vertexEntry.attachedEdges, chooseEdge,
+                            vertexEntry.vertex, false);
+
+                case IGraph.ITER_RANDOM:
+                    return () -> new RandomEdgeIter(vertexEntry.attachedEdges, chooseEdge,
+                            vertexEntry.vertex);
+            }
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    // 选择出边（包括无向边）
+    private static final int CHOOSE_EDGE_OUT = 1;
+    // 选择入边（包括无向边）
+    private static final int CHOOSE_EDGE_IN = 2;
+    // 选择所有边
+    private static final int CHOOSE_EDGE_ALL = 3;
+
+    private class OrderByIdEdgeIter implements Iterator<IGraphEdge> {
+
+        int expectedModCount = modCount;
+        // 需要遍历的边的类型
+        int iterEdgeType;
+        // 边的类型是出边或入边时，和其相关的顶点
+        IGraphVertex attachedVertex;
+        // 是否是升序遍历
+        boolean asc;
+        // 边迭代器。
+        Iterator<IGraphEdge> allEdgeIterator;
+        // 边的类型是出边或入边时，next 方法应该返回的下一个顶点
+        IGraphEdge nextMatchedEdge;
+
+        OrderByIdEdgeIter(TreeMap<Integer, IGraphEdge> iterEdgeMap,
+                          int iterEdgeType,
+                          IGraphVertex attachedVertex,
+                          boolean asc) {
+            this.asc = asc;
+            this.iterEdgeType = iterEdgeType;
+            this.attachedVertex = attachedVertex;
+            if (asc)
+                allEdgeIterator = iterEdgeMap.values().iterator();
+            else
+                allEdgeIterator = iterEdgeMap.descendingMap().values().iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            checkModCount();
+            if (iterEdgeType == CHOOSE_EDGE_ALL)
+                return allEdgeIterator.hasNext();
+            else {
+                return nextMatchedEdge();
+            }
+        }
+
+        @Override
+        public IGraphEdge next() {
+            checkModCount();
+            if (iterEdgeType == CHOOSE_EDGE_ALL)
+                return allEdgeIterator.next();
+            else {
+                if (nextMatchedEdge())
+                    return nextMatchedEdge;
+                else
+                    throw new NoSuchElementException();
+            }
+        }
+
+        private void checkModCount() {
+            if (expectedModCount != modCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        /**
+         * 找到下一个符合条件的顶点
+         *
+         * @return 是否有下一个符合条件的顶点
+         */
+        private boolean nextMatchedEdge() {
+            while (allEdgeIterator.hasNext()) {
+                nextMatchedEdge = allEdgeIterator.next();
+                if (matchEdge(nextMatchedEdge, iterEdgeType, attachedVertex))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    private class RandomEdgeIter implements Iterator<IGraphEdge> {
+
+        int expectedModCount = modCount;
+        // 需要遍历的边的类型
+        int iterEdgeType;
+        // 边的类型是出边或入边时，和其相关的顶点
+        IGraphVertex attachedVertex;
+        // 随机选取的边 id
+        List<IGraphEdge> iterEdges;
+        int cursor;
+        // 边的类型是出边或入边时，next 方法应该返回的下一个顶点
+        IGraphEdge nextMatchedEdge;
+
+        RandomEdgeIter(Map<Integer, IGraphEdge> iterEdgeMap, int iterEdgeType, IGraphVertex attachedVertex) {
+            this.iterEdgeType = iterEdgeType;
+            this.attachedVertex = attachedVertex;
+            iterEdges = new ArrayList<>(iterEdgeMap.values());
+            // 随机打乱 id
+            Collections.shuffle(iterEdges);
+        }
+
+        @Override
+        public boolean hasNext() {
+            checkModCount();
+            if (iterEdgeType == CHOOSE_EDGE_ALL)
+                return cursor < iterEdges.size();
+            else
+                return nextMatchedEdge();
+        }
+
+        @Override
+        public IGraphEdge next() {
+            checkModCount();
+            if (iterEdgeType == CHOOSE_EDGE_ALL) {
+                if (cursor < iterEdges.size())
+                    return iterEdges.get(cursor++);
+            } else {
+                if (nextMatchedEdge())
+                    return nextMatchedEdge;
+            }
+
+            throw new NoSuchElementException();
+        }
+
+        private void checkModCount() {
+            if (expectedModCount != modCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        private boolean nextMatchedEdge() {
+            while (cursor < iterEdges.size()) {
+                IGraphEdge nextMatchedEdge = iterEdges.get(cursor++);
+                if (matchEdge(nextMatchedEdge, iterEdgeType, attachedVertex))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     @Override
     public Iterable<IGraphEdge> vInEdges(int vid, int order) {
-        return null;
+        return vChooseEdges(vid, order, CHOOSE_EDGE_IN);
     }
 
     @Override
     public Iterable<IGraphEdge> vEdges(int vid, int order) {
-        return null;
+        return vChooseEdges(vid, order, CHOOSE_EDGE_ALL);
     }
 
     @Override
     public int vOutDegree(int vid) {
-        return 0;
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        return vertexEntry != null ? vertexEntry.outDegree : 0;
     }
 
     @Override
     public int vInDegree(int vid) {
-        return 0;
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        return vertexEntry != null ? vertexEntry.inDegree : 0;
     }
 
     @Override
     public int vEdgeNum(int vid) {
-        return 0;
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        return vertexEntry != null ? vertexEntry.edgeNum : 0;
     }
 
     /**
      * {@inheritDoc}
      * <p>
-     * 如果边或顶点存在于另一个图中，抛出{@link IllegalArgumentException}异常
+     * 如果边或顶点存在于另一个图中，或边和图的类型不匹配，则抛出{@link IllegalArgumentException}异常。
+     * <p>
+     * 如果边的某个顶点为 null，直接返回负值。
      */
     @Override
-    public boolean addEdge(IGraphEdge edge) {
-        return false;
+    public int addEdge(IGraphEdge edge) {
+        Objects.requireNonNull(edge);
+
+        if ((type == GraphType.DIRECTED && edge.type() == IGraphEdge.EdgeType.UNDIRECTED)
+                || (type == GraphType.UNDIRECTED && edge.type() == IGraphEdge.EdgeType.DIRECTED)) {
+            throw new IllegalArgumentException("type mismatch between edge and graph");
+        }
+
+        if (edge.graph() != null) {
+            if (edge.graph() == this)
+                return edge.id();
+            else
+                throw new IllegalArgumentException("this edge already exists in another graph: " + edge);
+        }
+
+        IGraphVertex from = edge.from(), to = edge.to();
+        if (from == null || to == null)
+            return -1;
+        if ((from.graph() != null && from.graph() != this) ||
+                (to.graph() != null && to.graph() != this)) {
+            throw new IllegalArgumentException("edge's vertices already exists in another graph");
+        }
+
+        // 顶点不在图中就将它添加进来
+        if (from.graph() == null)
+            addVertex(from);
+        if (to.graph() == null)
+            addVertex(to);
+
+        // 生成边 id
+        int nextEid = maxEid() + 1;
+        // 绑定边
+        edge.unsafeSetId(nextEid);
+        // 将 id 与边进行关联
+        _edgeMap().put(nextEid, edge);
+        // 将图中顶点和边进行关联
+        vertexEntries.get(from.id()).attachEdge(edge);
+        vertexEntries.get(to.id()).attachEdge(edge);
+
+        return nextEid;
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * 当某个顶点不存在时返回 -1。
+     */
+    @Override
+    public int addEdge(int from, int to, BiFunction<IGraphVertex, IGraphVertex, IGraphEdge> edgeSupplier) {
+        if (containsVertex(from) && containsVertex(to)) {
+            return addEdge(edgeSupplier.apply(vertex(from), vertex(to)));
+        }
+
+        return -1;
     }
 
     @Override
     public List<IGraphEdge> removeEdges(int from, int to, int order) {
-        return null;
+        return removeOrGetEdges(from, to, order, true);
+    }
+
+    private List<IGraphEdge> removeOrGetEdges(int from, int to, int order, boolean isRemove) {
+        VertexEntry fromEntry = _vertexEntries().get(from);
+        if (fromEntry == null || fromEntry.noEdge())
+            return Collections.emptyList();
+        VertexEntry toEntry = vertexEntries.get(to);
+        if (toEntry == null || toEntry.noEdge())
+            return Collections.emptyList();
+
+        // 求两个顶点的共同边
+        TreeSet<Integer> commonEdgeIds = new TreeSet<>(fromEntry.attachedEdges.keySet());
+        commonEdgeIds.retainAll(toEntry.attachedEdges.keySet());
+
+        _edgeMap();
+        List<IGraphEdge> edges = new ArrayList<>();
+        switch (order) {
+            default:
+            case ITER_DEFAULT:
+            case ITER_ASC_BY_ID:
+                for (int commonEdgeId : commonEdgeIds) {
+                    if (isRemove)
+                        edges.add(_detachEdge(fromEntry, toEntry, commonEdgeId));
+                    else
+                        edges.add(edgeMap.get(commonEdgeId));
+                }
+                break;
+
+            case ITER_DESC_BY_ID:
+                Iterator<Integer> descIterator = commonEdgeIds.descendingIterator();
+                while (descIterator.hasNext()) {
+                    if (isRemove)
+                        edges.add(_detachEdge(fromEntry, toEntry, descIterator.next()));
+                    else
+                        edges.add(edgeMap.get(descIterator.next()));
+                }
+                break;
+
+            case ITER_RANDOM:
+                List<Integer> randomIds = new ArrayList<>(commonEdgeIds);
+                Collections.shuffle(randomIds);
+                for (Integer randomId : randomIds) {
+                    if (isRemove)
+                        edges.add(_detachEdge(fromEntry, toEntry, randomId));
+                    else
+                        edges.add(edgeMap.get(randomId));
+                }
+                break;
+        }
+
+        return edges;
     }
 
     @Override
     public IGraphEdge removeEdge(int from, int to) {
-        return null;
+        VertexEntry fromEntry = _vertexEntries().get(from);
+        if (fromEntry == null || fromEntry.noEdge())
+            return null;
+        VertexEntry toEntry = vertexEntries.get(to);
+        if (toEntry == null || toEntry.noEdge())
+            return null;
+
+        // 求两个顶点的共同边
+        TreeSet<Integer> commonEdgeIds = new TreeSet<>(fromEntry.attachedEdges.keySet());
+        commonEdgeIds.retainAll(toEntry.attachedEdges.keySet());
+
+        if (commonEdgeIds.size() == 0)
+            return null;
+
+        return _detachEdge(fromEntry, toEntry, commonEdgeIds.first());
     }
 
     @Override
     public List<IGraphEdge> edges(int from, int to, int order) {
-        return null;
+        return removeOrGetEdges(from, to, order, false);
     }
 
     @Override
     public IGraphEdge edge(int from, int to) {
-        return null;
+        VertexEntry fromEntry = _vertexEntries().get(from);
+        if (fromEntry == null || fromEntry.noEdge())
+            return null;
+        VertexEntry toEntry = vertexEntries.get(to);
+        if (toEntry == null || toEntry.noEdge())
+            return null;
+
+        // 求两个顶点的共同边
+        TreeSet<Integer> commonEdgeIds = new TreeSet<>(fromEntry.attachedEdges.keySet());
+        commonEdgeIds.retainAll(toEntry.attachedEdges.keySet());
+
+        if (commonEdgeIds.size() == 0)
+            return null;
+
+        return _edgeMap().get(commonEdgeIds.first());
     }
 
     @Override
     public IGraphEdge edge(int eid) {
-        return null;
+        return _edgeMap().get(eid);
     }
 
     @Override
     public List<IGraphEdge> removeVertexOutEdges(int vid, int order) {
-        return null;
+        return removeVertexEdges(vid, order, CHOOSE_EDGE_OUT);
     }
 
     @Override
     public List<IGraphEdge> removeVertexInEdges(int vid, int order) {
-        return null;
+        return removeVertexEdges(vid, order, CHOOSE_EDGE_IN);
     }
 
     @Override
     public List<IGraphEdge> removeVertexAllEdges(int vid, int order) {
-        return null;
+        return removeVertexEdges(vid, order, CHOOSE_EDGE_ALL);
+    }
+
+    private List<IGraphEdge> removeVertexEdges(int vid, int order, int chooseEdgeType) {
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        if (vertexEntry == null || vertexEntry.noEdge())
+            return Collections.emptyList();
+
+        Collection<IGraphEdge> allEdges;
+        switch (order) {
+            default:
+            case ITER_DEFAULT:
+            case ITER_ASC_BY_ID:
+                allEdges = vertexEntry.attachedEdges.values();
+                break;
+
+            case ITER_DESC_BY_ID:
+                allEdges = vertexEntry.attachedEdges.descendingMap().values();
+                break;
+
+            case ITER_RANDOM:
+                allEdges = new ArrayList<>(vertexEntry.attachedEdges.values());
+                Collections.shuffle((List<IGraphEdge>) allEdges);
+                break;
+        }
+
+        List<IGraphEdge> removedEdges;
+        if (chooseEdgeType == CHOOSE_EDGE_ALL) {
+            if (order == ITER_RANDOM)
+                removedEdges = (List<IGraphEdge>) allEdges;
+            else
+                removedEdges = new ArrayList<>(allEdges);
+        } else {
+            removedEdges = new ArrayList<>();
+            for (IGraphEdge edge : allEdges) {
+                if (matchEdge(edge, chooseEdgeType, vertexEntry.vertex))
+                    removedEdges.add(edge);
+            }
+        }
+        for (IGraphEdge removedEdge : removedEdges) {
+            VertexEntry other = vertexEntries.get(removedEdge.other(vertexEntry.vertex).id());
+            _detachEdge(vertexEntry, other, removedEdge);
+        }
+
+        return removedEdges;
     }
 
     @Override
     public Iterable<IGraphVertex> vertices(int order) {
-        return null;
+        if (vertexEntries == null || vertexEntries.isEmpty())
+            return Collections.emptyList();
+
+        switch (order) {
+            default:
+            case ITER_DEFAULT:
+            case ITER_ASC_BY_ID:
+                return () -> new VertexIter(order, vertexEntries.values().iterator());
+
+            case ITER_DESC_BY_ID:
+                return () -> new VertexIter(order, vertexEntries.descendingMap().values().iterator());
+
+            case ITER_RANDOM:
+                return () -> new VertexIter(order, null);
+        }
+    }
+
+    private class VertexIter implements Iterator<IGraphVertex> {
+
+        int expectedModCount = modCount;
+        int cursor = 0;
+        Iterator<VertexEntry> vertexIterator;
+        List<VertexEntry> randomVertices;
+
+        public VertexIter(int order, Iterator<VertexEntry> vertexIterator) {
+            this.vertexIterator = vertexIterator;
+            if (order == ITER_RANDOM) {
+                randomVertices = new ArrayList<>(_vertexEntries().values());
+                Collections.shuffle(randomVertices);
+            }
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (randomVertices != null)
+                return cursor < randomVertices.size();
+            else
+                return vertexIterator.hasNext();
+        }
+
+        @Override
+        public IGraphVertex next() {
+            checkModCount();
+            if (randomVertices != null) {
+                if (cursor < randomVertices.size()) {
+                    return randomVertices.get(cursor++).vertex;
+                } else
+                    throw new NoSuchElementException();
+            } else {
+                return vertexIterator.next().vertex;
+            }
+        }
+
+        private void checkModCount() {
+            if (expectedModCount != modCount) {
+                throw new ConcurrentModificationException();
+            }
+        }
     }
 
     @Override
     public Iterable<IGraphEdge> edges(int order) {
-        return null;
+        if (_edgeMap().size() == 0) {
+            return Collections.emptyList();
+        } else {
+            switch (order) {
+                default:
+                case IGraph.ITER_DEFAULT:
+                case IGraph.ITER_ASC_BY_ID:
+                    return () -> new OrderByIdEdgeIter(edgeMap, CHOOSE_EDGE_ALL,
+                            null, true);
+
+                case IGraph.ITER_DESC_BY_ID:
+                    return () -> new OrderByIdEdgeIter(edgeMap, CHOOSE_EDGE_ALL,
+                            null, false);
+
+                case IGraph.ITER_RANDOM:
+                    return () -> new RandomEdgeIter(edgeMap, CHOOSE_EDGE_ALL,
+                            null);
+            }
+        }
     }
 
-    private TreeSet<Integer> _vids() {
-        return vertexIds != null ? vertexIds : (vertexIds = new TreeSet<>());
+    private TreeMap<Integer, VertexEntry> _vertexEntries() {
+        return vertexEntries != null ? vertexEntries : (vertexEntries = new TreeMap<>());
     }
 
-    private TreeSet<Integer> _eids() {
-        return edgeIds != null ? edgeIds : (edgeIds = new TreeSet<>());
-    }
-
-    private Map<Integer, VertexEdges> _vertexEdges() {
-        return vertexEdges != null ? vertexEdges : (vertexEdges = new HashMap<>());
-    }
-
-    private Map<Integer, IGraphEdge> _edges() {
-        return edges != null ? edges : (edges = new HashMap<>());
+    private TreeMap<Integer, IGraphEdge> _edgeMap() {
+        return edgeMap != null ? edgeMap : (edgeMap = new TreeMap<>());
     }
 
 
     private int maxVid() {
-        if (vertexIds == null) {
-            vertexIds = new TreeSet<>();
-            vertexIds.add(0);
-        }
+        if (vertexEntries == null)
+            vertexEntries = new TreeMap<>();
 
-        return vertexIds.last();
-    }
-
-    @SuppressWarnings("DuplicatedCode")
-    private int nextVid() {
-        if (vertexIds == null) {
-            vertexIds = new TreeSet<>();
-            vertexIds.add(0);
-
-            return 0;
-        }
-
-        int max = vertexIds.last();
-        vertexIds.add(max + 1);
-
-        return max;
+        return vertexEntries.isEmpty() ? 0 : vertexEntries.lastKey();
     }
 
     private int maxEid() {
-        if (edgeIds == null) {
-            edgeIds = new TreeSet<>();
-            edgeIds.add(0);
-        }
+        if (edgeMap == null)
+            edgeMap = new TreeMap<>();
 
-        return edgeIds.last();
-    }
-
-    @SuppressWarnings("DuplicatedCode")
-    private int nextEid() {
-        if (edgeIds == null) {
-            edgeIds = new TreeSet<>();
-            edgeIds.add(0);
-
-            return 0;
-        }
-
-        int max = edgeIds.last();
-        edgeIds.add(max + 1);
-
-        return max;
+        return edgeMap.isEmpty() ? 0 : edgeMap.lastKey();
     }
 
     private void checkId(int id) {
         if (id < 0)
-            throw new IllegalArgumentException("id cannot be less than 1");
+            throw new IllegalArgumentException("id cannot be less than 0");
+    }
+
+    private boolean matchEdge(IGraphEdge edge, int chooseEdgeType, IGraphVertex attachedVertex) {
+        return !edge.isDirected()
+                || (chooseEdgeType == CHOOSE_EDGE_OUT && edge.isFrom(attachedVertex))
+                || chooseEdgeType == CHOOSE_EDGE_IN && edge.isTo(attachedVertex);
+    }
+
+    private IGraphEdge _detachEdge(VertexEntry either, VertexEntry other, int eid) {
+        // 将顶点和边解绑
+        if (either != null)
+            either.detachEdge(eid);
+        if (other != null)
+            other.detachEdge(eid);
+        // 将边和顶点、图解绑
+        IGraphEdge edge = _edgeMap().remove(eid);
+        edge.unsafeSetId(-1);
+        edge.unsafeSetFrom(null);
+        edge.unsafeSetTo(null);
+
+        return edge;
+    }
+
+    private void  _detachEdge(VertexEntry either, VertexEntry other, IGraphEdge edge) {
+        // 将顶点和边解绑
+        if (either != null)
+            either.detachEdge(edge);
+        if (other != null)
+            other.detachEdge(edge);
+        // 将边和顶点、图解绑
+        _edgeMap().remove(edge.id());
+        edge.unsafeSetId(-1);
+        edge.unsafeSetFrom(null);
+        edge.unsafeSetTo(null);
     }
 }

@@ -8,7 +8,7 @@ public class HashMapProps implements IProps {
     private Map<Object, Object> props;
 
     public HashMapProps() {
-        this.props = new HashMap<>();
+        this.props = new HashMap<>(2);
     }
 
     public HashMapProps(int initialCapacity) {

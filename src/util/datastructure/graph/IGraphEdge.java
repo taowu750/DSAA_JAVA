@@ -111,6 +111,7 @@ public interface IGraphEdge extends IProps {
      * @throws IllegalArgumentException 如果 vertex 不是这条边的顶点
      */
     default IGraphVertex other(IGraphVertex vertex) {
+        Objects.requireNonNull(vertex);
         if (vertex == from()) {
             return to();
         } else if (vertex == to()) {
@@ -121,6 +122,17 @@ public interface IGraphEdge extends IProps {
     }
 
     /**
+     * 给定这条边的一个顶点，返回另一个顶点。如果 vertex 不是这条边的顶点，抛出{@link IllegalArgumentException}。
+     *
+     * @param vid 这条边的一个顶点的 id
+     * @return 另一个顶点
+     * @throws IllegalArgumentException 如果 vertex 不是这条边的顶点
+     */
+    default IGraphVertex other(int vid) {
+        return other(graph().vertex(vid));
+    }
+
+    /**
      * 返回指定顶点是否是边的起始顶点（有向图中）。
      *
      * @param vertex 顶点
@@ -128,6 +140,36 @@ public interface IGraphEdge extends IProps {
      */
     default boolean isFrom(IGraphVertex vertex) {
         return vertex != null && vertex == from();
+    }
+
+    /**
+     * 返回指定顶点是否是边的起始顶点（有向图中）。
+     *
+     * @param vid 顶点 id
+     * @return 是起始顶点（有向图中）返回 true；否则返回 false。
+     */
+    default boolean isFrom(int vid) {
+        return isFrom(graph().vertex(vid));
+    }
+
+    /**
+     * 返回指定顶点是否是边的目的顶点（有向图中）。
+     *
+     * @param vertex 顶点
+     * @return 是目的顶点（有向图中）返回 true；否则返回 false。
+     */
+    default boolean isTo(IGraphVertex vertex) {
+        return vertex != null && vertex == to();
+    }
+
+    /**
+     * 返回指定顶点是否是边的目的顶点（有向图中）。
+     *
+     * @param vid 顶点 id
+     * @return 是目的顶点（有向图中）返回 true；否则返回 false。
+     */
+    default boolean isTo(int vid) {
+        return isTo(graph().vertex(vid));
     }
 
     /**
@@ -148,8 +190,7 @@ public interface IGraphEdge extends IProps {
      * @return 关联返回 true；否则返回 false
      */
     default boolean isAttachVertex(IGraphVertex vertex) {
-        Objects.requireNonNull(vertex);
-        return from() == vertex || to() == vertex;
+        return vertex != null && (from() == vertex || to() == vertex);
     }
 
     /**

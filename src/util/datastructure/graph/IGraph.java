@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+// TODO: 增加 Stream 支持
 /**
  * 图接口。
  *
@@ -224,15 +225,6 @@ public interface IGraph extends IProps {
     }
 
     /**
-     * 从 id 代表的顶点指出的边。边的顺序由 order 指定。无向边既是出边也是入边。
-     *
-     * @param vid 顶点 id
-     * @param order 返回的结点的迭代顺序
-     * @return 从 vid 代表的顶点指出的边、无向边的迭代器
-     */
-    Iterable<IGraphEdge> vOutEdges(int vid, int order);
-
-    /**
      * vid 表示的顶点是否和 eid 表示的边相关联。
      *
      * @param vid 顶点 id
@@ -240,6 +232,15 @@ public interface IGraph extends IProps {
      * @return 相关联返回 true；否则返回 false
      */
     boolean vIsAttachEdge(int vid, int eid);
+
+    /**
+     * 从 id 代表的顶点指出的边。边的顺序由 order 指定。无向边既是出边也是入边。
+     *
+     * @param vid 顶点 id
+     * @param order 返回的结点的迭代顺序
+     * @return 从 vid 代表的顶点指出的边、无向边的迭代器
+     */
+    Iterable<IGraphEdge> vOutEdges(int vid, int order);
 
     /**
      * 参见{@link #vOutEdges(int, int)}，此方法以{@link #ITER_DEFAULT}迭代顺序返回。
@@ -347,6 +348,7 @@ public interface IGraph extends IProps {
      * 添加一条边
      *  - 如果这条边的两个顶点都存在于此图中，则添加这条边
      *  - 如果这条边的某个顶点没有和图绑定，则将顶点插入图中，然后再添加边
+     *  - 如果边的某个顶点为 null，则添加失败（抛出异常或返回特殊值由子类决定）
      *
      * 如果这条边的某个顶点存在于另一张图中，可以有以下几种策略：
      *  - 复制顶点和边
@@ -360,11 +362,13 @@ public interface IGraph extends IProps {
      * 需要注意，子类需要处理自环和平行边的情况。是以某种策略处理还是不允许（抛出异常），需要在文档中说明。
      *
      * @param edge 边
+     * @return 边的 id
      */
-    boolean addEdge(IGraphEdge edge);
+    int addEdge(IGraphEdge edge);
 
     /**
-     * 添加一条边。顶点是顶点 vid 为 from 和 to 的顶点。如果 from 或 to 不存在，则直接返回 false。
+     * 添加一条边。顶点是顶点 vid 为 from 和 to 的顶点。如果 from 或 to 不存在，则抛出异常
+     * （子类可以覆盖这一行为返回异常值）。
      *
      * 边可能是无向边或有向边，子类对它们的处理策略也需要在文档中说明。
      *
@@ -373,14 +377,14 @@ public interface IGraph extends IProps {
      * @param from 起始顶点 vid（对于有向图）
      * @param to 目的顶点 vid（对于有向图）
      * @param edgeSupplier 根据起始顶点和目的顶点返回{@link IGraphEdge}对象
-     * @return 添加成功返回 true；否则返回 false
+     * @return 返回边的 id
      */
-    default boolean addEdge(int from, int to, BiFunction<IGraphVertex, IGraphVertex, IGraphEdge> edgeSupplier) {
+    default int addEdge(int from, int to, BiFunction<IGraphVertex, IGraphVertex, IGraphEdge> edgeSupplier) {
         if (containsVertex(from) && containsVertex(to)) {
             return addEdge(edgeSupplier.apply(vertex(from), vertex(to)));
         }
 
-        return false;
+        throw new IllegalArgumentException("the vertex does not exist");
     }
 
     /**

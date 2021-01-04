@@ -1,7 +1,6 @@
 package util.datastructure.graph;
 
 import java.util.Collections;
-import java.util.Objects;
 
 /**
  * 图中的顶点。
@@ -60,9 +59,7 @@ public interface IGraphVertex extends IProps {
      * @return 相关联返回 true；否则返回 false
      */
     default boolean isAttachEdge(IGraphEdge edge) {
-        Objects.requireNonNull(edge);
-
-        return graph() == edge.graph() && isAttachEdge(edge.id());
+        return edge != null && graph() == edge.graph() && isAttachEdge(edge.id());
     }
 
     /**

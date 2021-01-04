@@ -3,20 +3,28 @@ package util.datastructure.graph;
 import java.util.Objects;
 
 /**
- * {@link IGraphVertex}的默认实现类。
+ * {@link IGraphEdge}的默认实现类。
  */
-public class GraphVertexImpl implements IGraphVertex {
+public class GraphEdgeImpl implements IGraphEdge {
 
     protected IProps props;
-    protected IGraph graph;
     protected int id;
+    protected EdgeType type;
+    protected IGraphVertex from, to;
 
-    public GraphVertexImpl() {
+    public GraphEdgeImpl(EdgeType type) {
+        this.type = type;
     }
 
-    public GraphVertexImpl(IGraph graph, int id) {
-        this.graph = graph;
-        this.id = id;
+    public GraphEdgeImpl(EdgeType type, IGraphVertex from, IGraphVertex to) {
+        this.id = -1;
+        this.type = type;
+        this.from = from;
+        this.to = to;
+    }
+
+    public GraphEdgeImpl(IGraphVertex from, IGraphVertex to) {
+        this(EdgeType.DIRECTED, from, to);
     }
 
     @Override
@@ -24,10 +32,10 @@ public class GraphVertexImpl implements IGraphVertex {
         if (obj == this)
             return true;
 
-        if (!(obj instanceof IGraphVertex))
+        if (!(obj instanceof IGraphEdge))
             return false;
 
-        IGraphVertex other = (IGraphVertex) obj;
+        IGraphEdge other = (IGraphEdge) obj;
 
         return graph() == other.graph()
                 && id == other.id();
@@ -43,13 +51,10 @@ public class GraphVertexImpl implements IGraphVertex {
         return getClass().getSimpleName() +
                 "{graph=" + Util.identityString(graph()) +
                 ", id=" + id +
-                ", edgeNum=" + edgeNum() +
+                ", type=" + type +
+                ", from=" + Util.vertexSimpleString(from) +
+                ", to=" + Util.vertexSimpleString(to) +
                 "}";
-    }
-
-    @Override
-    public IGraph graph() {
-        return graph;
     }
 
     @Override
@@ -58,13 +63,33 @@ public class GraphVertexImpl implements IGraphVertex {
     }
 
     @Override
-    public void unsafeSetGraph(IGraph graph) {
-        this.graph = graph;
+    public void unsafeSetId(int id) {
+        this.id = id;
     }
 
     @Override
-    public void unsafeSetId(int id) {
-        this.id = id;
+    public EdgeType type() {
+        return type;
+    }
+
+    @Override
+    public IGraphVertex from() {
+        return from;
+    }
+
+    @Override
+    public IGraphVertex to() {
+        return to;
+    }
+
+    @Override
+    public void unsafeSetFrom(IGraphVertex from) {
+        this.from = from;
+    }
+
+    @Override
+    public void unsafeSetTo(IGraphVertex to) {
+        this.to = to;
     }
 
 
