@@ -1,5 +1,7 @@
 package util.datastructure.graph;
 
+import java.util.function.BiFunction;
+
 /**
  * 一张属性表。
  */
@@ -17,6 +19,25 @@ public interface IProps {
      * @return key 存在，返回旧值，否则返回 null
      */
     <V> V putProp(Object key, V value);
+
+    /**
+     * 和{@link #putProp(Object, Object)}类似。只是当键存在并且 merge 不为 null 时，
+     * 使用 merge 将旧值和新值合并然后写入。
+     *
+     * @param key 属性的键
+     * @param value 属性的值
+     * @param merge 当键已存在，用来合并旧值和新值的函数
+     * @param <V> 属性值的类型
+     * @return key 存在，返回旧值，否则返回 null
+     */
+    default <V> V mergeProp(Object key, V value, BiFunction<V, V, V> merge) {
+        if (!containsProp(key) || merge == null)
+            return putProp(key, value);
+        else {
+            V mergedValue = merge.apply(getProp(key), value);
+            return putProp(key, mergedValue);
+        }
+    }
 
     /**
      * 删除一个属性，键为 key，返回对应的值。如果属性不存在抛出{@link IllegalArgumentException}。
