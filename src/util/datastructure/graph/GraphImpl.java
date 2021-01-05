@@ -698,7 +698,7 @@ public class GraphImpl extends AbstractGraph {
         Iterator<VertexEntry> vertexIterator;
         List<VertexEntry> randomVertices;
 
-        public VertexIter(int order, Iterator<VertexEntry> vertexIterator) {
+        VertexIter(int order, Iterator<VertexEntry> vertexIterator) {
             this.vertexIterator = vertexIterator;
             if (order == ITER_RANDOM) {
                 randomVertices = new ArrayList<>(_vertexEntries().values());
