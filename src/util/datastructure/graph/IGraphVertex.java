@@ -63,6 +63,48 @@ public interface IGraphVertex extends IProps {
     }
 
     /**
+     * 返回 eid 代表的边是否是此顶点的出边（无向边既是出边又是入边）
+     *
+     * @param eid 边 id
+     * @return 是的话返回 true；否则返回 false
+     */
+    default boolean isOutEdge(int eid) {
+        IGraph graph = graph();
+        return graph != null && graph.vIsOutEdge(id(), eid);
+    }
+
+    /**
+     * 返回边是否是此顶点的出边（无向边既是出边又是入边）
+     *
+     * @param edge 边
+     * @return 是的话返回 true；否则返回 false
+     */
+    default boolean isOutEdge(IGraphEdge edge) {
+        return edge != null && graph() == edge.graph() && isOutEdge(edge.id());
+    }
+
+    /**
+     * 返回 eid 代表的边是否是此顶点的入边（无向边既是出边又是入边）
+     *
+     * @param eid 边 id
+     * @return 是的话返回 true；否则返回 false
+     */
+    default boolean isInEdge(int eid) {
+        IGraph graph = graph();
+        return graph != null && graph.vIsInEdge(id(), eid);
+    }
+
+    /**
+     * 返回边是否是此顶点的入边（无向边既是出边又是入边）
+     *
+     * @param edge 边
+     * @return 是的话返回 true；否则返回 false
+     */
+    default boolean isInEdge(IGraphEdge edge) {
+        return edge != null && graph() == edge.graph() && isInEdge(edge.id());
+    }
+
+    /**
      * 从此顶点指出的边。边的顺序由 order 指定。无向边既是出边也是入边。
      *
      * @param order 边的迭代顺序，参见{@link IGraph#ITER_ASC_BY_ID}等常量
@@ -147,7 +189,7 @@ public interface IGraphVertex extends IProps {
      *
      * @return 此顶点所有边的数量
      */
-    default int edgeNum() {
+    default int degree() {
         IGraph graph = graph();
         return graph != null ? graph.vEdgeNum(id()) : 0;
     }
@@ -176,6 +218,6 @@ public interface IGraphVertex extends IProps {
      * @return 有边返回 true；否则返回 false
      */
     default boolean hasEdge() {
-        return edgeNum() != 0;
+        return degree() != 0;
     }
 }

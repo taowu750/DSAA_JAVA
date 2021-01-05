@@ -118,10 +118,20 @@ public class AlgsDataIO {
         return newIn("tinyCG.txt");
     }
 
+    /**
+     * 小型无向图
+     *
+     * @return
+     */
     public static In openTinyG() {
         return newIn("tinyG.txt");
     }
 
+    /**
+     * 中型无向图
+     *
+     * @return
+     */
     public static In openMediumG() {
         return newIn("mediumG.txt");
     }
@@ -143,16 +153,17 @@ public class AlgsDataIO {
         return DIR + "movies.txt";
     }
 
+    public static String fileJobs() {
+        return DIR + "jobs.txt";
+    }
+
     /**
-     * 包含5个强连通分量的有向图
+     * 包含5个强连通分量的有向图。13个顶点、22条边
+     *
      * @return
      */
     public static In openTinyDG() {
         return newIn("tinyDG.txt");
-    }
-
-    public static String fileJobs() {
-        return DIR + "jobs.txt";
     }
 
     /**

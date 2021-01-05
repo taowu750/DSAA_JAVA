@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 // TODO: 允许迭代器删除
+
 /**
  * {@link IGraph}的默认实现。此实现需要在构造的时候指定图的类型（{@link #type()}）。
  * <p>
@@ -86,6 +87,11 @@ public class GraphImpl extends AbstractGraph {
     }
 
     @Override
+    public String toString() {
+        return Graphs.simpleGraphString(this);
+    }
+
+    @Override
     public GraphType type() {
         return type;
     }
@@ -110,7 +116,8 @@ public class GraphImpl extends AbstractGraph {
         Objects.requireNonNull(vertex);
 
         IGraph vGraph = vertex.graph();
-        if (vertex.graph() != null) {
+        if (vGraph != null) {
+            // 如果顶点的图等于当前图，我们认为它存在于此图中
             if (vGraph == this)
                 return vertex.id();
             else
@@ -141,7 +148,7 @@ public class GraphImpl extends AbstractGraph {
         Objects.requireNonNull(vertex);
 
         IGraph vGraph = vertex.graph();
-        if (vertex.graph() != null) {
+        if (vGraph != null) {
             if (vGraph == this)
                 return false;
             else
@@ -157,11 +164,11 @@ public class GraphImpl extends AbstractGraph {
 
         modCount++;
 
-        return false;
+        return true;
     }
 
     @Override
-    public DeletedVertexWithEdge removeVertex(int vid) {
+    public RemovedVertexWithEdge removeVertex(int vid) {
         // 删除顶点
         VertexEntry deleted = _vertexEntries().remove(vid);
         if (deleted == null)
@@ -170,13 +177,11 @@ public class GraphImpl extends AbstractGraph {
         // 解绑顶点
         deleted.vertex.unsafeSetGraph(null);
         deleted.vertex.unsafeSetId(-1);
-        DeletedVertexWithEdge deletedVertexWithEdge;
+        RemovedVertexWithEdge removedVertexWithEdge;
         if (deleted.noEdge()) {
             // 没有关联的边，则返回此顶点和空边列表
-            deletedVertexWithEdge = new DeletedVertexWithEdge(deleted.vertex, Collections.emptyList());
+            removedVertexWithEdge = new RemovedVertexWithEdge(deleted.vertex, Collections.emptyList());
         } else {
-            // 初始化边 Map
-            _edgeMap();
             // 删除顶点所有关联的边
             List<IGraphEdge> deletedEdges = new ArrayList<>(deleted.attachedEdges.values());
             for (IGraphEdge deletedEdge : deletedEdges) {
@@ -185,12 +190,12 @@ public class GraphImpl extends AbstractGraph {
                 _detachEdge(null, other, deletedEdge);
             }
 
-            deletedVertexWithEdge = new DeletedVertexWithEdge(deleted.vertex, deletedEdges);
+            removedVertexWithEdge = new RemovedVertexWithEdge(deleted.vertex, deletedEdges);
         }
 
         modCount++;
 
-        return deletedVertexWithEdge;
+        return removedVertexWithEdge;
     }
 
     @Override
@@ -204,6 +209,22 @@ public class GraphImpl extends AbstractGraph {
         VertexEntry vertexEntry = _vertexEntries().get(vid);
         return vertexEntry != null && !vertexEntry.noEdge()
                 && vertexEntry.attachedEdges.containsKey(eid);
+    }
+
+    @Override
+    public boolean vIsOutEdge(int vid, int eid) {
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        IGraphEdge edge = vertexEntry != null && !vertexEntry.noEdge() ? vertexEntry.attachedEdges.get(eid) : null;
+
+        return edge != null && (edge.type() == IGraphEdge.EdgeType.UNDIRECTED || edge.from() == vertexEntry.vertex);
+    }
+
+    @Override
+    public boolean vIsInEdge(int vid, int eid) {
+        VertexEntry vertexEntry = _vertexEntries().get(vid);
+        IGraphEdge edge = vertexEntry != null && !vertexEntry.noEdge() ? vertexEntry.attachedEdges.get(eid) : null;
+
+        return edge != null && (edge.type() == IGraphEdge.EdgeType.UNDIRECTED || edge.to() == vertexEntry.vertex);
     }
 
     @Override
@@ -270,7 +291,6 @@ public class GraphImpl extends AbstractGraph {
 
         @Override
         public boolean hasNext() {
-            checkModCount();
             if (iterEdgeType == CHOOSE_EDGE_ALL)
                 return allEdgeIterator.hasNext();
             else {
@@ -284,9 +304,12 @@ public class GraphImpl extends AbstractGraph {
             if (iterEdgeType == CHOOSE_EDGE_ALL)
                 return allEdgeIterator.next();
             else {
-                if (nextMatchedEdge())
-                    return nextMatchedEdge;
-                else
+                if (nextMatchedEdge()) {
+                    IGraphEdge tmp = nextMatchedEdge;
+                    nextMatchedEdge = null;
+
+                    return tmp;
+                } else
                     throw new NoSuchElementException();
             }
         }
@@ -303,13 +326,18 @@ public class GraphImpl extends AbstractGraph {
          * @return 是否有下一个符合条件的顶点
          */
         private boolean nextMatchedEdge() {
-            while (allEdgeIterator.hasNext()) {
-                nextMatchedEdge = allEdgeIterator.next();
-                if (matchEdge(nextMatchedEdge, iterEdgeType, attachedVertex))
-                    return true;
+            if (nextMatchedEdge == null) {
+                while (allEdgeIterator.hasNext()) {
+                    nextMatchedEdge = allEdgeIterator.next();
+                    if (matchEdge(nextMatchedEdge, iterEdgeType, attachedVertex))
+                        return true;
+                }
+                nextMatchedEdge = null;
+
+                return false;
             }
 
-            return false;
+            return true;
         }
     }
 
@@ -350,8 +378,12 @@ public class GraphImpl extends AbstractGraph {
                 if (cursor < iterEdges.size())
                     return iterEdges.get(cursor++);
             } else {
-                if (nextMatchedEdge())
-                    return nextMatchedEdge;
+                if (nextMatchedEdge()) {
+                    IGraphEdge tmp = nextMatchedEdge;
+                    nextMatchedEdge = null;
+
+                    return tmp;
+                }
             }
 
             throw new NoSuchElementException();
@@ -364,13 +396,18 @@ public class GraphImpl extends AbstractGraph {
         }
 
         private boolean nextMatchedEdge() {
-            while (cursor < iterEdges.size()) {
-                IGraphEdge nextMatchedEdge = iterEdges.get(cursor++);
-                if (matchEdge(nextMatchedEdge, iterEdgeType, attachedVertex))
-                    return true;
+            if (nextMatchedEdge == null) {
+                while (cursor < iterEdges.size()) {
+                    nextMatchedEdge = iterEdges.get(cursor++);
+                    if (matchEdge(nextMatchedEdge, iterEdgeType, attachedVertex))
+                        return true;
+                }
+                nextMatchedEdge = null;
+
+                return false;
             }
 
-            return false;
+            return true;
         }
     }
 
@@ -418,19 +455,17 @@ public class GraphImpl extends AbstractGraph {
             throw new IllegalArgumentException("type mismatch between edge and graph");
         }
 
-        if (edge.graph() != null) {
-            if (edge.graph() == this)
-                return edge.id();
-            else
-                throw new IllegalArgumentException("this edge already exists in another graph: " + edge);
-        }
-
+        // 检查边的结点是否为 null 或存在于其他图中
         IGraphVertex from = edge.from(), to = edge.to();
         if (from == null || to == null)
             return -1;
         if ((from.graph() != null && from.graph() != this) ||
                 (to.graph() != null && to.graph() != this)) {
             throw new IllegalArgumentException("edge's vertices already exists in another graph");
+        }
+
+        if (_edgeMap().get(edge.id()) == edge) {
+            return edge.id();
         }
 
         // 顶点不在图中就将它添加进来
@@ -448,7 +483,7 @@ public class GraphImpl extends AbstractGraph {
         // 将图中顶点和边进行关联
         vertexEntries.get(from.id()).attachEdge(edge);
         vertexEntries.get(to.id()).attachEdge(edge);
-        
+
         modCount++;
 
         return nextEid;
@@ -485,26 +520,27 @@ public class GraphImpl extends AbstractGraph {
         TreeSet<Integer> commonEdgeIds = new TreeSet<>(fromEntry.attachedEdges.keySet());
         commonEdgeIds.retainAll(toEntry.attachedEdges.keySet());
 
-        _edgeMap();
         List<IGraphEdge> edges = new ArrayList<>();
         switch (order) {
             default:
             case ITER_DEFAULT:
             case ITER_ASC_BY_ID:
-                for (int commonEdgeId : commonEdgeIds) {
-                    if (isRemove)
+                if (isRemove) {
+                    for (int commonEdgeId : commonEdgeIds)
                         edges.add(_detachEdge(fromEntry, toEntry, commonEdgeId));
-                    else
+                } else {
+                    for (int commonEdgeId : commonEdgeIds)
                         edges.add(edgeMap.get(commonEdgeId));
                 }
                 break;
 
             case ITER_DESC_BY_ID:
                 Iterator<Integer> descIterator = commonEdgeIds.descendingIterator();
-                while (descIterator.hasNext()) {
-                    if (isRemove)
+                if (isRemove) {
+                    while (descIterator.hasNext())
                         edges.add(_detachEdge(fromEntry, toEntry, descIterator.next()));
-                    else
+                } else {
+                    while (descIterator.hasNext())
                         edges.add(edgeMap.get(descIterator.next()));
                 }
                 break;
@@ -512,10 +548,11 @@ public class GraphImpl extends AbstractGraph {
             case ITER_RANDOM:
                 List<Integer> randomIds = new ArrayList<>(commonEdgeIds);
                 Collections.shuffle(randomIds);
-                for (Integer randomId : randomIds) {
-                    if (isRemove)
+                if (isRemove) {
+                    for (int randomId : randomIds)
                         edges.add(_detachEdge(fromEntry, toEntry, randomId));
-                    else
+                } else {
+                    for (int randomId : randomIds)
                         edges.add(edgeMap.get(randomId));
                 }
                 break;
@@ -540,7 +577,7 @@ public class GraphImpl extends AbstractGraph {
 
         if (commonEdgeIds.size() == 0)
             return null;
-        
+
         modCount++;
 
         return _detachEdge(fromEntry, toEntry, commonEdgeIds.first());
@@ -769,7 +806,7 @@ public class GraphImpl extends AbstractGraph {
         return edge;
     }
 
-    private void  _detachEdge(VertexEntry either, VertexEntry other, IGraphEdge edge) {
+    private void _detachEdge(VertexEntry either, VertexEntry other, IGraphEdge edge) {
         // 将顶点和边解绑
         if (either != null)
             either.detachEdge(edge);

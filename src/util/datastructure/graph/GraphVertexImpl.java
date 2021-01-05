@@ -39,7 +39,7 @@ public class GraphVertexImpl implements IGraphVertex {
         return getClass().getSimpleName() +
                 "{graph=" + Util.identityString(graph()) +
                 ", id=" + id +
-                ", edgeNum=" + edgeNum() +
+                ", edgeNum=" + degree() +
                 "}";
     }
 

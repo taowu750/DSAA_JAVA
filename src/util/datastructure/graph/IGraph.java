@@ -173,11 +173,11 @@ public interface IGraph extends IProps {
      */
     boolean insertVertex(int vid, IGraphVertex vertex);
 
-    public static final class DeletedVertexWithEdge {
+    public static final class RemovedVertexWithEdge {
         public final IGraphVertex vertex;
         public final List<IGraphEdge> edges;
 
-        public DeletedVertexWithEdge(IGraphVertex vertex, List<IGraphEdge> edges) {
+        public RemovedVertexWithEdge(IGraphVertex vertex, List<IGraphEdge> edges) {
             this.vertex = vertex;
             this.edges = edges;
         }
@@ -192,7 +192,7 @@ public interface IGraph extends IProps {
      * @param vid 顶点 id
      * @return 返回删除的顶点和它相关联的边；不存在顶点返回 null
      */
-    DeletedVertexWithEdge removeVertex(int vid);
+    RemovedVertexWithEdge removeVertex(int vid);
 
     /**
      * 根据顶点 id 返回对应的顶点。顶点 id 不存在返回 null。
@@ -231,6 +231,24 @@ public interface IGraph extends IProps {
      * @return 相关联返回 true；否则返回 false
      */
     boolean vIsAttachEdge(int vid, int eid);
+
+    /**
+     * 返回边是否是指定顶点的出边（无向边既是出边又是入边）
+     *
+     * @param vid 顶点 id
+     * @param eid 边 id
+     * @return 是的话返回 true；否则返回 false
+     */
+    boolean vIsOutEdge(int vid, int eid);
+
+    /**
+     * 返回边是否是指定顶点的入边（无向边既是出边又是入边）
+     *
+     * @param vid 顶点 id
+     * @param eid 边 id
+     * @return 是的话返回 true；否则返回 false
+     */
+    boolean vIsInEdge(int vid, int eid);
 
     /**
      * 从 id 代表的顶点指出的边。边的顺序由 order 指定。无向边既是出边也是入边。
