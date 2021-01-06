@@ -1,6 +1,7 @@
 package util.datastructure.graph;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 
 /**
@@ -40,41 +41,40 @@ public class Graphs {
         }
     }
 
-    public static String simpleGraphString(IGraph graph, int vertexOrder, int edgeOrder) {
+    public static String graphString(IGraph graph,
+                                     BiFunction<IGraph, StringBuilder, StringBuilder> graphAppend,
+                                     BiFunction<IGraphVertex, StringBuilder, StringBuilder> vertexAppend,
+                                     TriFunction<IGraphEdge, IGraphVertex, StringBuilder, StringBuilder> edgeAppend,
+                                     int vertexOrder, int edgeOrder) {
         Objects.requireNonNull(graph);
 
+        if (graphAppend == null) {
+            graphAppend = (g, sb) -> sb.append(g.toString());
+        }
+        if (vertexAppend == null) {
+            vertexAppend = (v, sb) -> sb.append(v.toString());
+        }
+        if (edgeAppend == null) {
+            edgeAppend = (e, v, sb) -> sb.append(e.toString());
+        }
+
         StringBuilder graphString = new StringBuilder();
-        graphString.append(graph.getClass().getSimpleName())
-                .append("(type=").append(graph.type())
-                .append(", vertexNum=").append(graph.vertexNum())
-                .append(", edgeNum=").append(graph.edgeNum())
-                .append(") {");
+        graphAppend.apply(graph, graphString).append(" {");
 
         StringBuilder undirectedEdgeString = new StringBuilder();
         StringBuilder directedOutEdgeString = new StringBuilder();
         StringBuilder directedInEdgeString = new StringBuilder();
         for (IGraphVertex vertex : graph.vertices(vertexOrder)) {
-            graphString.append("\n\t").append(vertex.getClass().getSimpleName())
-                    .append("(id=").append(vertex.id())
-                    .append(", outDegree=").append(vertex.outDegree())
-                    .append(", inDegree=").append(vertex.inDegree())
-                    .append(", degree=").append(vertex.degree()).append(")");
+            vertexAppend.apply(vertex, graphString.append("\n\t"));
             if (vertex.hasEdge()) {
-                graphString.append("[");
+                graphString.append(" [");
                 for (IGraphEdge edge : vertex.edges(edgeOrder)) {
                     if (!edge.isDirected()) {
-                        undirectedEdgeString.append("\n\t\t").append(edge.getClass().getSimpleName())
-                                .append("(id=").append(edge.id())
-                                .append(", from=").append(edge.from().id())
-                                .append(", to=").append(edge.to().id()).append(")");
+                        edgeAppend.apply(edge, vertex, undirectedEdgeString.append("\n\t\t"));
                     } else if (edge.isFrom(vertex)) {
-                        directedOutEdgeString.append("\n\t\t").append(edge.getClass().getSimpleName())
-                                .append("(id=").append(edge.id())
-                                .append(", to=").append(edge.to().id()).append(")");
+                        edgeAppend.apply(edge, vertex, directedOutEdgeString.append("\n\t\t"));
                     } else {
-                        directedInEdgeString.append("\n\t\t").append(edge.getClass().getSimpleName())
-                                .append("(id=").append(edge.id())
-                                .append(", from=").append(edge.from().id()).append(")");
+                        edgeAppend.apply(edge, vertex, directedInEdgeString.append("\n\t\t"));
                     }
                 }
                 if (undirectedEdgeString.length() != 0) {
@@ -99,6 +99,62 @@ public class Graphs {
         graphString.append("\n}");
 
         return graphString.toString();
+    }
+
+    public static String graphString(IGraph graph,
+                                     BiFunction<IGraph, StringBuilder, StringBuilder> graphAppend,
+                                     BiFunction<IGraphVertex, StringBuilder, StringBuilder> vertexAppend,
+                                     TriFunction<IGraphEdge, IGraphVertex, StringBuilder, StringBuilder> edgeAppend) {
+        return graphString(graph, graphAppend, vertexAppend, edgeAppend, IGraph.ITER_DEFAULT, IGraph.ITER_DEFAULT);
+    }
+
+    public static String graphString(IGraph graph, int vertexOrder, int edgeOrder) {
+        return graphString(graph, null, null, null,
+                vertexOrder, edgeOrder);
+    }
+
+    public static String graphString(IGraph graph) {
+        return graphString(graph, null, null, null,
+                IGraph.ITER_DEFAULT, IGraph.ITER_DEFAULT);
+    }
+
+    public static String simpleGraphString(IGraph graph, int vertexOrder, int edgeOrder) {
+        BiFunction<IGraph, StringBuilder, StringBuilder> graphAppend = (g, sb) ->
+                sb.append(graph.getClass().getSimpleName())
+                        .append("(type=").append(graph.type())
+                        .append(", vertexNum=").append(graph.vertexNum())
+                        .append(", edgeNum=").append(graph.edgeNum())
+                        .append(")");
+        BiFunction<IGraphVertex, StringBuilder, StringBuilder> vertexAppend = (v, sb) ->
+                sb.append(v.getClass().getSimpleName())
+                        .append("(id=").append(v.id())
+                        .append(", outDegree=").append(v.outDegree())
+                        .append(", inDegree=").append(v.inDegree())
+                        .append(", degree=").append(v.degree()).append(")");
+        TriFunction<IGraphEdge, IGraphVertex, StringBuilder, StringBuilder> edgeAppend = (e, v, sb) -> {
+            switch (e.type()) {
+                case UNDIRECTED:
+                    sb.append(e.getClass().getSimpleName())
+                            .append("(id=").append(e.id())
+                            .append(", from=").append(e.from().id())
+                            .append(", to=").append(e.to().id()).append(")");
+                    break;
+
+                case DIRECTED:
+                    if (e.isFrom(v))
+                        sb.append(e.getClass().getSimpleName())
+                                .append("(id=").append(e.id())
+                                .append(", to=").append(e.to().id()).append(")");
+                    else
+                        sb.append(e.getClass().getSimpleName())
+                                .append("(id=").append(e.id())
+                                .append(", from=").append(e.from().id()).append(")");
+            }
+
+            return sb;
+        };
+
+        return graphString(graph, graphAppend, vertexAppend, edgeAppend, vertexOrder, edgeOrder);
     }
 
     public static String simpleGraphString(IGraph graph, int vertexOrder) {

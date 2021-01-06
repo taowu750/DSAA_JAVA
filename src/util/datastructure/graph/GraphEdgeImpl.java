@@ -49,12 +49,11 @@ public class GraphEdgeImpl implements IGraphEdge {
     @Override
     public String toString() {
         return getClass().getSimpleName() +
-                "{graph=" + Util.identityString(graph()) +
-                ", id=" + id +
+                "(id=" + id +
                 ", type=" + type +
                 ", from=" + Util.vertexSimpleString(from) +
                 ", to=" + Util.vertexSimpleString(to) +
-                "}";
+                ")";
     }
 
     @Override
