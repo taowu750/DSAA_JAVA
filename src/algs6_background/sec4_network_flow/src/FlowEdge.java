@@ -43,6 +43,15 @@ public class FlowEdge extends GraphEdgeImpl {
     }
 
     /**
+     * 判断边的流量非负且小于等于容量
+     *
+     * @return
+     */
+    public boolean isFeasible() {
+        return (double) getProp("flow") >= 0 && residualCapacity() >= 0;
+    }
+
+    /**
      * 将边的流量增加 delta。返回增加后的流量。
      *
      * @param delta
@@ -54,11 +63,11 @@ public class FlowEdge extends GraphEdgeImpl {
 
     @Override
     public String toString() {
-        return "FlowEdge{" +
+        return "FlowEdge(" +
                 "from=" + (from != null ? from.id() : "null") +
                 ", to=" + (to != null ? to.id() : "null") +
                 ", capacity=" + getProp("capacity") +
                 ", flow=" + getProp("flow") +
-                '}';
+                ')';
     }
 }
