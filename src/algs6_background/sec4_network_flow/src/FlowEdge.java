@@ -1,14 +1,15 @@
 package algs6_background.sec4_network_flow.src;
 
+import util.datastructure.graph.GenericProxyGraphEdge;
 import util.datastructure.graph.GraphEdgeImpl;
 
 /**
  * 流量网络中的边。
  */
-public class FlowEdge extends GraphEdgeImpl {
+public class FlowEdge extends GenericProxyGraphEdge<FlowNetwork, FlowVertex> {
 
     public FlowEdge(double capacity) {
-        super(EdgeType.DIRECTED);
+        super(new GraphEdgeImpl(EdgeType.DIRECTED), FlowVertex.class);
         // 容量
         putProp("capacity", capacity);
         // 流量
@@ -63,6 +64,7 @@ public class FlowEdge extends GraphEdgeImpl {
 
     @Override
     public String toString() {
+        FlowVertex from = from(), to = to();
         return "FlowEdge(" +
                 "from=" + (from != null ? from.id() : "null") +
                 ", to=" + (to != null ? to.id() : "null") +

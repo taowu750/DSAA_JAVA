@@ -108,7 +108,7 @@ public class GraphImplTest {
         assertNull(graph.removeVertex(100));
 
         graph.vertex(0).putProp("test", "test");
-        int edgeNum = graph.vEdgeNum(0);
+        int edgeNum = graph.vDegree(0);
         List<Integer> edgeIds = new ArrayList<>();
         List<Integer> otherVertexIds = new ArrayList<>();
         for (IGraphEdge edge : graph.vEdges(0)) {

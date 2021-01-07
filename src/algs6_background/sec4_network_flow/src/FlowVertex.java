@@ -1,25 +1,27 @@
 package algs6_background.sec4_network_flow.src;
 
+import util.datastructure.graph.GenericProxyGraphVertex;
 import util.datastructure.graph.GraphVertexImpl;
-import util.datastructure.graph.IGraphEdge;
 
 /**
  * 流量网络中的顶点。
  */
-public class FlowVertex extends GraphVertexImpl {
+public class FlowVertex extends GenericProxyGraphVertex<FlowNetwork, FlowEdge> {
+
+    public FlowVertex() {
+        super(new GraphVertexImpl(), FlowNetwork.class, FlowEdge.class);
+    }
 
     /**
      * 检查顶点是否局部平衡。
      */
     public boolean localEq() {
         double netFlow = 0.;
-        for (IGraphEdge edge : inEdges()) {
-            FlowEdge flowEdge = (FlowEdge) edge;
-            netFlow += flowEdge.flow();
+        for (FlowEdge edge : checkedInEdges()) {
+            netFlow += edge.flow();
         }
-        for (IGraphEdge edge : outEdges()) {
-            FlowEdge flowEdge = (FlowEdge) edge;
-            netFlow -= flowEdge.flow();
+        for (FlowEdge edge : checkedOutEdges()) {
+            netFlow -= edge.flow();
         }
 
         return Math.abs(netFlow) < 1e-11;
@@ -27,6 +29,6 @@ public class FlowVertex extends GraphVertexImpl {
 
     @Override
     public String toString() {
-        return "FlowVertex(id=" + id + ")";
+        return "FlowVertex(id=" + id() + ")";
     }
 }

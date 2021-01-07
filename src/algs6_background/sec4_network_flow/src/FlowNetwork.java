@@ -1,10 +1,7 @@
 package algs6_background.sec4_network_flow.src;
 
 import util.algs.In;
-import util.datastructure.graph.GraphImpl;
-import util.datastructure.graph.Graphs;
-import util.datastructure.graph.IGraphEdge;
-import util.datastructure.graph.IGraphVertex;
+import util.datastructure.graph.*;
 
 /**
  * 流量网络。一张流量网络是一张边的权重（这里称为容量）为正的加权有向图。
@@ -19,15 +16,15 @@ import util.datastructure.graph.IGraphVertex;
  *
  * 最大 st-流量问题：给定一个 st-流量网络，找到一种 st-流量配置，使得从 s 到 t 的流量最大化。
  */
-public class FlowNetwork extends GraphImpl {
+public class FlowNetwork extends GenericProxyGraph<FlowVertex, FlowEdge> {
 
     public FlowNetwork(int vertexNum) {
-        super(GraphType.DIRECTED);
+        super(new GraphImpl(GraphType.DIRECTED), FlowVertex.class, FlowEdge.class);
         Graphs.addAll(this, vertexNum, i -> new FlowVertex());
     }
 
     public FlowNetwork(In in) {
-        super(GraphType.DIRECTED);
+        super(new GraphImpl(GraphType.DIRECTED), FlowVertex.class, FlowEdge.class);
     }
 
     /**
@@ -36,7 +33,7 @@ public class FlowNetwork extends GraphImpl {
      * @return
      */
     public FlowVertex src() {
-        return (FlowVertex) vertex(0);
+        return vertex(0);
     }
 
     /**
@@ -45,7 +42,7 @@ public class FlowNetwork extends GraphImpl {
      * @return
      */
     public FlowVertex dst() {
-        return (FlowVertex) vertex(vertexNum() - 1);
+        return vertex(vertexNum() - 1);
     }
 
     /**
@@ -53,16 +50,14 @@ public class FlowNetwork extends GraphImpl {
      */
     public boolean isFeasible() {
         // 确认每条边的流量非负且小于等于容量
-        for (IGraphEdge edge : edges()) {
-            FlowEdge flowEdge = (FlowEdge) edge;
-            if (!flowEdge.isFeasible())
+        for (FlowEdge edge : checkedEdges()) {
+            if (!edge.isFeasible())
                 return false;
         }
 
         // 确认每个顶点是否达到局部平衡状态
-        for (IGraphVertex vertex : vertices()) {
-            FlowVertex flowVertex = (FlowVertex) vertex;
-            if (!flowVertex.localEq())
+        for (FlowVertex vertex : checkedVertices()) {
+            if (!vertex.localEq())
                 return false;
         }
 
