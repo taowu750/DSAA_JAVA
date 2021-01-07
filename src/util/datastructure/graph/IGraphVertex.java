@@ -191,7 +191,7 @@ public interface IGraphVertex extends IProps {
      */
     default int degree() {
         IGraph graph = graph();
-        return graph != null ? graph.vEdgeNum(id()) : 0;
+        return graph != null ? graph.vDegree(id()) : 0;
     }
 
     /**

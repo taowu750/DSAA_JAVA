@@ -329,7 +329,7 @@ public interface IGraph extends IProps {
      * @param vid 顶点 id
      * @return vid 代表的顶点所有边的数量
      */
-    int vEdgeNum(int vid);
+    int vDegree(int vid);
 
     /**
      * vid 代表的顶点有没有出边。无向边既是出边也是入边。
@@ -358,7 +358,7 @@ public interface IGraph extends IProps {
      * @return 有边返回 true；否则返回 false
      */
     default boolean vHashEdge(int vid) {
-        return vEdgeNum(vid) != 0;
+        return vDegree(vid) != 0;
     }
 
     /**

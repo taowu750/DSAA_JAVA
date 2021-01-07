@@ -434,7 +434,7 @@ public class GraphImpl extends AbstractGraph {
     }
 
     @Override
-    public int vEdgeNum(int vid) {
+    public int vDegree(int vid) {
         VertexEntry vertexEntry = _vertexEntries().get(vid);
         return vertexEntry != null ? vertexEntry.edgeNum : 0;
     }
