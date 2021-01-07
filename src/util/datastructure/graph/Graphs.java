@@ -113,6 +113,10 @@ public class Graphs {
                 vertexOrder, edgeOrder);
     }
 
+    public static String graphString(IGraph graph, BiFunction<IGraph, StringBuilder, StringBuilder> graphAppend) {
+        return graphString(graph, graphAppend, null, null);
+    }
+
     public static String graphString(IGraph graph) {
         return graphString(graph, null, null, null,
                 IGraph.ITER_DEFAULT, IGraph.ITER_DEFAULT);
