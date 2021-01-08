@@ -21,7 +21,7 @@ public class GraphImpl extends AbstractGraph {
     private static class VertexEntry {
         IGraphVertex vertex;
         TreeMap<Integer, IGraphEdge> attachedEdges;
-        int outDegree, inDegree, edgeNum;
+        int outDegree, inDegree;
 
         VertexEntry(IGraphVertex vertex) {
             this.vertex = vertex;
@@ -50,7 +50,6 @@ public class GraphImpl extends AbstractGraph {
                 } else {
                     inDegree++;
                 }
-                edgeNum++;
             }
         }
 
@@ -66,7 +65,6 @@ public class GraphImpl extends AbstractGraph {
                 } else {
                     inDegree--;
                 }
-                edgeNum--;
             }
         }
 
@@ -76,6 +74,7 @@ public class GraphImpl extends AbstractGraph {
     }
 
     private GraphType type;
+    private IGraph proxyGraph;
     private TreeMap<Integer, VertexEntry> vertexEntries;
     private TreeMap<Integer, IGraphEdge> edgeMap;
 
@@ -94,6 +93,11 @@ public class GraphImpl extends AbstractGraph {
     @Override
     public GraphType type() {
         return type;
+    }
+
+    @Override
+    public void setProxyGraph(IGraph graph) {
+        proxyGraph = graph;
     }
 
     @Override
@@ -118,7 +122,7 @@ public class GraphImpl extends AbstractGraph {
         IGraph vGraph = vertex.graph();
         if (vGraph != null) {
             // 如果顶点的图等于当前图，我们认为它存在于此图中
-            if (vGraph == this)
+            if (vGraph == currentGraph())
                 return vertex.id();
             else
                 throw new IllegalArgumentException("this vertex already exists in another graph: " + vertex);
@@ -127,7 +131,7 @@ public class GraphImpl extends AbstractGraph {
         // 生成 id
         int nextId = maxVid() + 1;
         // 绑定顶点
-        vertex.unsafeSetGraph(this);
+        vertex.unsafeSetGraph(currentGraph());
         vertex.unsafeSetId(nextId);
         // 将 id 与顶点进行关联
         _vertexEntries().put(nextId, new VertexEntry(vertex));
@@ -149,7 +153,7 @@ public class GraphImpl extends AbstractGraph {
 
         IGraph vGraph = vertex.graph();
         if (vGraph != null) {
-            if (vGraph == this)
+            if (vGraph == currentGraph())
                 return false;
             else
                 throw new IllegalArgumentException("this vertex already exists in another graph: " + vertex);
@@ -158,7 +162,7 @@ public class GraphImpl extends AbstractGraph {
         if (_vertexEntries().containsKey(vid))
             return false;
 
-        vertex.unsafeSetGraph(this);
+        vertex.unsafeSetGraph(currentGraph());
         vertex.unsafeSetId(vid);
         vertexEntries.put(vid, new VertexEntry(vertex));
 
@@ -436,7 +440,7 @@ public class GraphImpl extends AbstractGraph {
     @Override
     public int vDegree(int vid) {
         VertexEntry vertexEntry = _vertexEntries().get(vid);
-        return vertexEntry != null ? vertexEntry.edgeNum : 0;
+        return vertexEntry != null && !vertexEntry.noEdge() ? vertexEntry.attachedEdges.size() : 0;
     }
 
     /**
@@ -459,8 +463,8 @@ public class GraphImpl extends AbstractGraph {
         IGraphVertex from = edge.from(), to = edge.to();
         if (from == null || to == null)
             return -1;
-        if ((from.graph() != null && from.graph() != this) ||
-                (to.graph() != null && to.graph() != this)) {
+        if ((from.graph() != null && from.graph() != currentGraph()) ||
+                (to.graph() != null && to.graph() != currentGraph())) {
             throw new IllegalArgumentException("edge's vertices already exists in another graph");
         }
 
@@ -757,6 +761,10 @@ public class GraphImpl extends AbstractGraph {
         }
     }
 
+    private IGraph currentGraph() {
+        return proxyGraph != null ? proxyGraph : this;
+    }
+
     private TreeMap<Integer, VertexEntry> _vertexEntries() {
         return vertexEntries != null ? vertexEntries : (vertexEntries = new TreeMap<>());
     }
@@ -764,7 +772,6 @@ public class GraphImpl extends AbstractGraph {
     private TreeMap<Integer, IGraphEdge> _edgeMap() {
         return edgeMap != null ? edgeMap : (edgeMap = new TreeMap<>());
     }
-
 
     private int maxVid() {
         if (vertexEntries == null)

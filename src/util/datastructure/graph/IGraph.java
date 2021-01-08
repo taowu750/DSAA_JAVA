@@ -93,6 +93,13 @@ public interface IGraph extends IProps {
     }
 
     /**
+     * 设置此图的代理图对象。
+     *
+     * @param graph 代理图对象
+     */
+    void setProxyGraph(IGraph graph);
+
+    /**
      * 判断此图是否是无向图。
      *
      * @return 是无向图返回 true；否则返回 false

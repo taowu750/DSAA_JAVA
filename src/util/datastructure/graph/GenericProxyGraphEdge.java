@@ -218,7 +218,7 @@ public class GenericProxyGraphEdge<G extends IGraph, GV extends IGraphVertex> im
     }
 
     private void checkVertex(IGraphVertex vertex) {
-        if (!vertexClass.isInstance(vertex)) {
+        if (vertex != null && !vertexClass.isInstance(vertex)) {
             throw new IllegalStateException("the parameter vertex type does not match the specified vertex type");
         }
     }

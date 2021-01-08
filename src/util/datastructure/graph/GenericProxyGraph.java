@@ -24,6 +24,7 @@ public class GenericProxyGraph<GV extends IGraphVertex, GE extends IGraphEdge> i
         Objects.requireNonNull(vertexClass);
         Objects.requireNonNull(edgeClass);
 
+        graph.setProxyGraph(this);
         this.vertexClass = vertexClass;
         this.edgeClass = edgeClass;
         this.graph = graph;
@@ -32,6 +33,11 @@ public class GenericProxyGraph<GV extends IGraphVertex, GE extends IGraphEdge> i
     @Override
     public GraphType type() {
         return graph.type();
+    }
+
+    @Override
+    public void setProxyGraph(IGraph graph) {
+        this.graph.setProxyGraph(graph);
     }
 
     @Override
@@ -491,12 +497,12 @@ public class GenericProxyGraph<GV extends IGraphVertex, GE extends IGraphEdge> i
     }
 
     private void checkEdge(IGraphEdge edge) {
-        if (!edgeClass.isInstance(edge))
+        if (edge != null && !edgeClass.isInstance(edge))
             throw new IllegalStateException("the parameter edge type does not match the specified edge type");
     }
 
     private void checkVertex(IGraphVertex vertex) {
-        if (!vertexClass.isInstance(vertex)) {
+        if (vertex != null && !vertexClass.isInstance(vertex)) {
             throw new IllegalStateException("the parameter vertex type does not match the specified vertex type");
         }
     }

@@ -260,12 +260,12 @@ public class GenericProxyGraphVertex<G extends IGraph, GE extends IGraphEdge> im
     }
 
     private void checkGraph(IGraph graph) {
-        if (!graphClass.isInstance(graph))
+        if (graph != null && !graphClass.isInstance(graph))
             throw new IllegalStateException("the parameter graph type does not match the specified graph type");
     }
 
     private void checkEdge(IGraphEdge edge) {
-        if (!edgeClass.isInstance(edge))
+        if (edge != null && !edgeClass.isInstance(edge))
             throw new IllegalStateException("the parameter edge type does not match the specified edge type");
     }
 }
