@@ -15,16 +15,26 @@ import util.datastructure.graph.*;
  * 那么就称这种流量配置是可行的。
  *
  * 最大 st-流量问题：给定一个 st-流量网络，找到一种 st-流量配置，使得从 s 到 t 的流量最大化。
+ *
+ *
+ * 此网络是剩余网络，参见{@link FordFulkerson}。
  */
 public class FlowNetwork extends GenericProxyGraph<FlowVertex, FlowEdge> {
 
     public FlowNetwork(int vertexNum) {
-        super(new GraphImpl(GraphType.DIRECTED), FlowVertex.class, FlowEdge.class);
+        super(new GraphImpl(GraphType.UNDIRECTED), FlowVertex.class, FlowEdge.class);
         Graphs.addAll(this, vertexNum, i -> new FlowVertex());
     }
 
     public FlowNetwork(In in) {
-        super(new GraphImpl(GraphType.DIRECTED), FlowVertex.class, FlowEdge.class);
+        super(new GraphImpl(GraphType.UNDIRECTED), FlowVertex.class, FlowEdge.class);
+
+        int vertexNum = in.readInt(), edgeNum = in.readInt();
+        Graphs.addAll(this, vertexNum, i -> new FlowVertex());
+
+        for (int i = 0; i < edgeNum; i++) {
+            checkedAddEdge(in.readInt(), in.readInt(), (from, to) -> new FlowEdge(from, to, in.readDouble()));
+        }
     }
 
     /**
@@ -66,6 +76,6 @@ public class FlowNetwork extends GenericProxyGraph<FlowVertex, FlowEdge> {
 
     @Override
     public String toString() {
-        return Graphs.graphString(this);
+        return Graphs.graphString(this, (g, sb) -> sb.append("FlowNetwork"));
     }
 }

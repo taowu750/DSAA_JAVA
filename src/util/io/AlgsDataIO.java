@@ -307,7 +307,7 @@ public class AlgsDataIO {
      *
      * @return
      */
-    public In openTinyFN() {
+    public static In openTinyFN() {
         return newIn("tinyFN.txt");
     }
 
