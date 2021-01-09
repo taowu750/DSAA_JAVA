@@ -109,7 +109,7 @@ public class GraphEdgeImpl implements IGraphEdge {
 
     @Override
     public <V> V getProp(Object key) {
-        return props().removeProp(key);
+        return props().getProp(key);
     }
 
     @Override

@@ -86,7 +86,7 @@ public interface IGraphEdge extends IProps {
     /**
      * 设置此边的起始顶点（对于有向图）。
      *
-     * @apiNote 注意，此方法应仅被{@link IGraph}中的方法调用。
+     * @apiNote 注意，此方法应仅被{@link IGraph}中的方法调用，或在构造边的对象时设置它的顶点，
      * 通过其他方式调用的后果是未定义的。
      *
      * @param from 起始顶点（对于有向图）
@@ -96,7 +96,7 @@ public interface IGraphEdge extends IProps {
     /**
      * 设置此边的目的顶点（对于有向图）。
      *
-     * @apiNote 注意，此方法应仅被{@link IGraph}中的方法调用。
+     * @apiNote 注意，此方法应仅被{@link IGraph}中的方法调用，或在构造边的对象时设置它的顶点，
      * 通过其他方式调用的后果是未定义的。
      *
      * @param to 目的顶点（对于有向图）
