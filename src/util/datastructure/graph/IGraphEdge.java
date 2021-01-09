@@ -7,7 +7,7 @@ public interface IGraphEdge extends IProps {
     /**
      * 表示边是有向还是无向的。
      */
-    public enum EdgeType {
+    enum EdgeType {
         /**
          * 有向边
          */
@@ -54,7 +54,7 @@ public interface IGraphEdge extends IProps {
     /**
      * 此边的类型，参见{@link EdgeType}。
      *
-     * @return
+     * @return 边的类型
      */
     EdgeType type();
 

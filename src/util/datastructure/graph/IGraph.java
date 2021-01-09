@@ -19,7 +19,7 @@ public interface IGraph extends IProps {
     /**
      * 表示图的类型
      */
-    public enum GraphType {
+    enum GraphType {
         /**
          * 有向图，只包含有向边
          */
@@ -42,21 +42,21 @@ public interface IGraph extends IProps {
      * 表示默认迭代顺序，可能是随机或其他方式。这种方式应该是最快的迭代顺序。
      * 具体由子类实现，子类应在文档中说明此顺序。
      */
-    public static final int ITER_DEFAULT = 1;
+    int ITER_DEFAULT = 1;
     /**
      * 表示按 id 从小到大的迭代顺序。
      */
-    public static final int ITER_ASC_BY_ID = 1 << 1;
+    int ITER_ASC_BY_ID = 1 << 1;
     /**
      * 表示按 id 从大到小的迭代顺序。
      */
-    public static final int ITER_DESC_BY_ID = 1 << 2;
+    int ITER_DESC_BY_ID = 1 << 2;
     /**
      * 表示随机顺序，每次迭代的随机顺序应不同。
      *
      * 注意，这种顺序是可选的。子类实现不了可以抛出{@link IllegalArgumentException}。
      */
-    public static final int ITER_RANDOM = 1 << 3;
+    int ITER_RANDOM = 1 << 3;
 
     /**
      * 返回此图的类型，类型参见{@link GraphType}。
@@ -180,7 +180,7 @@ public interface IGraph extends IProps {
      */
     boolean insertVertex(int vid, IGraphVertex vertex);
 
-    public static final class RemovedVertexWithEdge {
+    final class RemovedVertexWithEdge {
         public final IGraphVertex vertex;
         public final List<IGraphEdge> edges;
 
